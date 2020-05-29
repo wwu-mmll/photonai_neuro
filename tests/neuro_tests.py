@@ -5,6 +5,7 @@ import numpy as np
 from nibabel.nifti1 import Nifti1Image
 from nilearn import image
 from nilearn.input_data import NiftiMasker
+from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import ShuffleSplit
 
 from photonai.base import OutputSettings, Hyperpipe, PipelineElement
@@ -19,12 +20,16 @@ class NeuroTest(PhotonBaseTest):
 
     def setUp(self):
         super(NeuroTest, self).setUp()
-        self.test_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../test_data/')
-        self.atlas_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../neuro/atlases/')
+        self.test_folder = os.path.dirname(os.path.abspath(__file__))
+        self.atlas_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../base/atlases/')
         self.atlas_name = "AAL"
         self.roi_list = ["Hippocampus_R", "Hippocampus_L", "Amygdala_L", "Amygdala_R"]
-        self.X = AtlasLibrary().get_nii_files_from_folder(self.test_folder, extension=".nii")
-        self.y = np.random.randn(len(self.X))
+        # GET DATA FROM OASIS
+        n_subjects = 10
+        dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
+        age = dataset_files.ext_vars['age'].astype(float)
+        self.y = np.array(age)
+        self.X = np.array(dataset_files.gray_matter_maps)
 
     def test_single_subject_resampling(self):
         voxel_size = [3, 3, 3]
