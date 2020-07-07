@@ -4,19 +4,27 @@ import os
 import numpy as np
 from nibabel.nifti1 import Nifti1Image
 from nilearn import image
+from nilearn.image import resample_img, index_img, smooth_img
 from nilearn.input_data import NiftiMasker
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import ShuffleSplit
 
 from photonai.base import OutputSettings, Hyperpipe, PipelineElement
 from photonai.base.photon_pipeline import CacheManager
-from photonai.neuro import NeuroBranch
-from photonai.neuro.brain_atlas import BrainMask, AtlasLibrary, BrainAtlas
 from photonai.processing import ResultsHandler
 from photonai.test.photon_base_test import PhotonBaseTest
 
+from photonai-neuro import NeuroBranch, BrainMask, AtlasLibrary, BrainAtlas
+
 
 class NeuroTest(PhotonBaseTest):
+
+    @staticmethod
+    def get_data_from_oasis(self, n_subjects=10):
+        # GET DATA FROM OASIS
+        dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
+        age = dataset_files.ext_vars['age'].astype(float)
+        return np.array(dataset_files.gray_matter_maps), np.array(age)
 
     def setUp(self):
         super(NeuroTest, self).setUp()
@@ -24,18 +32,12 @@ class NeuroTest(PhotonBaseTest):
         self.atlas_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../base/atlases/')
         self.atlas_name = "AAL"
         self.roi_list = ["Hippocampus_R", "Hippocampus_L", "Amygdala_L", "Amygdala_R"]
-        # GET DATA FROM OASIS
-        n_subjects = 10
-        dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
-        age = dataset_files.ext_vars['age'].astype(float)
-        self.y = np.array(age)
-        self.X = np.array(dataset_files.gray_matter_maps)
+        self.X, self.y = self.get_data_from_oasis()
 
     def test_single_subject_resampling(self):
         voxel_size = [3, 3, 3]
 
         # nilearn
-        from nilearn.image import resample_img
         nilearn_resampled_img = resample_img(self.X[0], interpolation='nearest', target_affine = np.diag(voxel_size))
         nilearn_resampled_array = nilearn_resampled_img.dataobj
 
@@ -58,7 +60,6 @@ class NeuroTest(PhotonBaseTest):
         voxel_size = [3, 3, 3]
 
         # nilearn
-        from nilearn.image import resample_img, index_img
         nilearn_resampled = resample_img(self.X[:3], interpolation='nearest', target_affine = np.diag(voxel_size))
         nilearn_resampled_img = [index_img(nilearn_resampled, i) for i in range(nilearn_resampled.shape[-1])]
         nilearn_resampled_array = np.moveaxis(nilearn_resampled.dataobj, -1, 0)
@@ -82,7 +83,6 @@ class NeuroTest(PhotonBaseTest):
     def test_single_subject_smoothing(self):
 
         # nilearn
-        from nilearn.image import smooth_img
         nilearn_smoothed_img = smooth_img(self.X[0], fwhm=[3, 3, 3])
         nilearn_smoothed_array = nilearn_smoothed_img.dataobj
 
@@ -103,7 +103,6 @@ class NeuroTest(PhotonBaseTest):
 
     def test_multi_subject_smoothing(self):
         # nilearn
-        from nilearn.image import smooth_img
         nilearn_smoothed_img = smooth_img(self.X[0:3], fwhm=[3, 3, 3])
         nilearn_smoothed_array = nilearn_smoothed_img[1].dataobj
 
