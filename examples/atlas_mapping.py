@@ -5,7 +5,7 @@ from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import KFold
 
 from photonai.base import Hyperpipe, PipelineElement, OutputSettings, Preprocessing
-from photonai.neuro import AtlasMapper, NeuroBranch
+from photonai_neuro import AtlasMapper, NeuroBranch
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 

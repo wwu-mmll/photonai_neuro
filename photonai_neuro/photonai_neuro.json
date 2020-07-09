@@ -1,0 +1,22 @@
+{
+   "ResampleImages":[
+      "photonai_neuro.nifti_transformations.ResampleImages",
+      "Transformer"
+   ],
+   "SmoothImages":[
+      "photonai_neuro.nifti_transformations.SmoothImages",
+      "Transformer"
+   ],
+   "BrainAtlas":[
+      "photonai_neuro.brain_atlas.BrainAtlas",
+      "Transformer"
+   ],
+   "BrainMask":[
+      "photonai_neuro.brain_atlas.BrainMask",
+      "Transformer"
+   ],
+   "PatchImages":[
+      "photonai_neuro.nifti_transformations.PatchImages",
+      "Transformer"
+   ]
+}

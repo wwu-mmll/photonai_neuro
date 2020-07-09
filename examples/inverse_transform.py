@@ -5,8 +5,8 @@ from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import ShuffleSplit
 
 from photonai.base import Hyperpipe, PipelineElement, OutputSettings
-from photonai.neuro import NeuroBranch
-from photonai.neuro.brain_atlas import AtlasLibrary
+from photonai_neuro import NeuroBranch
+from photonai_neuro.brain_atlas import AtlasLibrary
 from photonai.processing import ResultsHandler
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)

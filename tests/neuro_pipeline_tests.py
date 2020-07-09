@@ -1,6 +1,6 @@
 
-from photonai-neuro.base import NeuroBranch
-from photonai-neuro.base import AtlasLibrary
+from photonai_neuro import NeuroBranch
+from photonai_neuro import AtlasLibrary
 
 from photonai.test.photon_base_test import PhotonBaseTest
 from photonai.base import PipelineElement, Hyperpipe, OutputSettings
@@ -8,11 +8,13 @@ from photonai.base.cache_manager import CacheManager
 from photonai.base.photon_pipeline import PhotonPipeline
 
 from sklearn.model_selection import KFold
-import os, glob
+import os
+import glob
 import numpy as np
 
 
-def CachedPhotonPipelineTestsNeuro(PhotonBaseTest):
+class CachedPhotonPipelineTestsNeuro(PhotonBaseTest):
+
     def test_single_subject_caching(self):
 
         nb = NeuroBranch("subject_caching_test")

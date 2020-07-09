@@ -11,11 +11,11 @@ from nilearn import datasets, surface, plotting
 
 from photonai.base import PipelineElement
 from photonai.base.hyperpipe import Hyperpipe
-from photonai.neuro.brain_atlas import BrainAtlas, AtlasLibrary
-from photonai.neuro.neuro_branch import NeuroBranch
 from photonai.photonlogger.logger import logger
-
 from photonai.processing import ResultsHandler
+
+from photonai_neuro.brain_atlas import BrainAtlas, AtlasLibrary
+from photonai_neuro.neuro_branch import NeuroBranch
 
 
 class AtlasMapper:

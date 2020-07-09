@@ -148,7 +148,7 @@ class AtlasLibrary:
         img = image.load_img(atlas_object.path)
         resampled_img = self._resample(img, target_affine=target_affine, target_shape=target_shape)
         atlas_object.atlas = resampled_img
-        atlas_object.map = np.asarray(atlas_object.atlas.get_data())
+        atlas_object.map = np.asarray(atlas_object.atlas.get_fdata())
 
         # apply mask threshold
         if mask_threshold is not None:

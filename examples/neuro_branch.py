@@ -6,7 +6,7 @@ from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import ShuffleSplit
 
 from photonai.base import Hyperpipe, PipelineElement, OutputSettings, CallbackElement, Branch
-from photonai.neuro import NeuroBranch
+from photonai_neuro import NeuroBranch
 from photonai.optimization import Categorical
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)

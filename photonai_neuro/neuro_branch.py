@@ -5,10 +5,9 @@ import numpy as np
 from dask.distributed import Client
 from nibabel.nifti1 import Nifti1Image
 
-from photonai.base import Branch, CallbackElement
-from photonai.base.registry.element_dictionary import ElementDictionary
+from photonai.base import Branch, CallbackElement, PhotonRegistry
 from photonai.helper.helper import PhotonDataHelper
-from photonai.neuro.brain_atlas import BrainAtlas
+from photonai_neuro.brain_atlas import BrainAtlas
 from photonai.photonlogger.logger import logger
 
 
@@ -24,7 +23,7 @@ class NeuroBranch(Branch):
         Name of the NeuroModule pipeline branch
 
     """
-    NEURO_ELEMENTS = ElementDictionary.get_package_info(['PhotonNeuro'])
+    NEURO_ELEMENTS = PhotonRegistry().get_package_info(['photonai_neuro'])
 
     def __init__(self, name, nr_of_processes=1, output_img: bool = False):
         Branch.__init__(self, name)

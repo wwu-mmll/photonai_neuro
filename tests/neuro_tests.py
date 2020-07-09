@@ -14,13 +14,13 @@ from photonai.base.photon_pipeline import CacheManager
 from photonai.processing import ResultsHandler
 from photonai.test.photon_base_test import PhotonBaseTest
 
-from photonai-neuro import NeuroBranch, BrainMask, AtlasLibrary, BrainAtlas
+from photonai_neuro import NeuroBranch, BrainMask, AtlasLibrary, BrainAtlas
 
 
 class NeuroTest(PhotonBaseTest):
 
     @staticmethod
-    def get_data_from_oasis(self, n_subjects=10):
+    def get_data_from_oasis(n_subjects=10):
         # GET DATA FROM OASIS
         dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
         age = dataset_files.ext_vars['age'].astype(float)
