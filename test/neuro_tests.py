@@ -12,12 +12,17 @@ from sklearn.model_selection import ShuffleSplit
 from photonai.base import OutputSettings, Hyperpipe, PipelineElement
 from photonai.base.photon_pipeline import CacheManager
 from photonai.processing import ResultsHandler
-from photonai.test.photon_base_test import PhotonBaseTest
+from photonai.helper.photon_base_test import PhotonBaseTest
 
 from photonai_neuro import NeuroBranch, BrainMask, AtlasLibrary, BrainAtlas
 
 
 class NeuroTest(PhotonBaseTest):
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.file = __file__
+        super(NeuroTest, cls).setUpClass()
 
     @staticmethod
     def get_data_from_oasis(n_subjects=10):
@@ -29,7 +34,7 @@ class NeuroTest(PhotonBaseTest):
     def setUp(self):
         super(NeuroTest, self).setUp()
         self.test_folder = os.path.dirname(os.path.abspath(__file__))
-        self.atlas_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../base/atlases/')
+        self.atlas_folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '../photonai_neuro/atlases/')
         self.atlas_name = "AAL"
         self.roi_list = ["Hippocampus_R", "Hippocampus_L", "Amygdala_L", "Amygdala_R"]
         self.X, self.y = self.get_data_from_oasis()

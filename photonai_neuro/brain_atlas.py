@@ -13,7 +13,7 @@ from nilearn.image import math_img
 from nilearn.input_data import NiftiMasker
 from sklearn.base import BaseEstimator
 
-from photonai.helper.helper import Singleton
+#from photonai.helper.helper import Singleton
 from photonai.photonlogger.logger import logger
 
 
@@ -51,7 +51,7 @@ class AtlasObject:
         self.shape = shape
 
 
-@Singleton
+#@Singleton
 class AtlasLibrary:
     ATLAS_DICTIONARY = {'AAL': 'AAL.nii.gz',
                         'HarvardOxford_Cortical_Threshold_25': 'HarvardOxford-cort-maxprob-thr25.nii.gz',

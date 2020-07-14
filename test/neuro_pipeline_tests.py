@@ -2,7 +2,7 @@
 from photonai_neuro import NeuroBranch
 from photonai_neuro import AtlasLibrary
 
-from photonai.test.photon_base_test import PhotonBaseTest
+from photonai.helper.photon_base_test import PhotonBaseTest
 from photonai.base import PipelineElement, Hyperpipe, OutputSettings
 from photonai.base.cache_manager import CacheManager
 from photonai.base.photon_pipeline import PhotonPipeline
@@ -14,6 +14,10 @@ import numpy as np
 
 
 class CachedPhotonPipelineTestsNeuro(PhotonBaseTest):
+
+    def setUp(self) -> None:
+        super(CachedPhotonPipelineTestsNeuro, self).setUp()
+        self.cache_folder_path = "./cache/"
 
     def test_single_subject_caching(self):
 
