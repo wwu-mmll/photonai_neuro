@@ -6,13 +6,13 @@ from nibabel.nifti1 import Nifti1Image
 
 from photonai.photonlogger.logger import logger
 
+
 class NeuroTransformerMixin:
 
-    def __init__(self):
-        self.output_img = False
+    def __init__(self, output_img: bool = False):
+        self.output_img = output_img
 
 
-# Smoothing
 class SmoothImages(BaseEstimator, NeuroTransformerMixin):
     def __init__(self, fwhm=[2, 2, 2]):
 

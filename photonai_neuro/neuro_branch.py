@@ -7,8 +7,10 @@ from photonai.base import ParallelBranch, CallbackElement, PhotonRegistry
 from photonai_neuro.brain_atlas import BrainAtlas
 from photonai.photonlogger.logger import logger
 
+from photonai_neuro.nifti_transformations import NeuroTransformerMixin
 
-class NeuroBranch(ParallelBranch):
+
+class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
     """
     A substream of neuro elements that are encapsulated into a single block of PipelineElements that all perform
     transformations on MRI data. A NeuroBranch takes niftis or nifti paths as input and should pass a numpy array
@@ -23,9 +25,8 @@ class NeuroBranch(ParallelBranch):
     NEURO_ELEMENTS = PhotonRegistry().get_package_info(['photonai_neuro'])
 
     def __init__(self, name, nr_of_processes=1, output_img: bool = False):
-        ParallelBranch.__init__(self, name)
-
-        self.output_img = output_img
+        ParallelBranch.__init__(self, name, nr_of_processes=nr_of_processes)
+        NeuroTransformerMixin.__init__(self, output_img=output_img)
 
     def __iadd__(self, pipe_element):
         """
