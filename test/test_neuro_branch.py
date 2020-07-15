@@ -37,6 +37,7 @@ class NeuroBranchTests(NeuroBaseTest):
 
                 # transform data
                 obj.base_element.cache_folder = self.cache_folder_path
+                CacheManager.clear_cache_files(obj.base_element.cache_folder, True)
                 obj.base_element.current_config = {'test_suite': 1}
                 new_X, _, _ = obj.transform(self.X)
                 obj.base_element.clear_cache()
@@ -66,8 +67,7 @@ class NeuroBranchTests(NeuroBaseTest):
             nilearn_resampled_X.append(image.resample_img(element, **resample_param_dict))
         create_instances_and_transform('ResampleImages', {'voxel_size': [5, 5, 5]}, nilearn_resampled_X)
 
-
-    def ttest_neuro_module_branch(self):
+    def test_neuro_module_branch(self):
         nmb = NeuroBranch('best_branch_ever')
         nmb += PipelineElement('SmoothImages', fwhm=10)
         nmb += PipelineElement('ResampleImages', voxel_size=5)
@@ -79,7 +79,7 @@ class NeuroBranchTests(NeuroBaseTest):
         # set the config so that caching works
         nmb.set_params(**{'SmoothImages__fwhm': 10, 'ResampleImages__voxel_size': 5})
 
-        # okay we are transforming 8 Niftis with 3 elements, so afterwards there should be 3*8
+        # transforming 8 Niftis with 3 elements, so afterwards there should be 3*8
         nr_niftis = 7
         nmb.transform(self.X[:nr_niftis])
         nr_files_in_folder = len(glob.glob(os.path.join(nmb.base_element.cache_folder, "*.p")))
@@ -93,7 +93,74 @@ class NeuroBranchTests(NeuroBaseTest):
         self.assertTrue(nr_files_in_folder == (3 * len(self.X)))
         self.assertTrue(len(nmb.base_element.cache_man.cache_index.items()) == (3 * len(self.X)))
 
-    def neuro_branch_output_img(self):
-        # todo: check if we are always getting a 4d numpy array if no brain atlas or brain mask has been applied
-        # todo: check if we get a list of nifti images if we set output_image to True
-        pass
+    def test_output_img(self):
+        for output_img in [True, False]:
+            nb = NeuroBranch('Neuro_Branch', output_img=output_img)
+            nb += PipelineElement('SmoothImages', fwhm=10)
+            nb += PipelineElement('ResampleImages', voxel_size=5)
+
+            nb.base_element.cache_folder = self.cache_folder_path
+            CacheManager.clear_cache_files(nb.base_element.cache_folder, True)
+            # set the config so that caching works
+            nb.set_params(**{'SmoothImages__fwhm': 10, 'ResampleImages__voxel_size': 5})
+
+            results, _, _ = nb.transform(self.X[:6])
+
+            if output_img:
+                for res in results:
+                    self.assertIsInstance(res, Nifti1Image)
+            else:
+                self.assertEqual(len(results.shape), 4)
+                self.assertEqual(results.shape[0], 6)
+
+    def test_test_transform_single(self):
+        nb = NeuroBranch('neuro_branch')
+        nb += PipelineElement('SmoothImages', fwhm=10)
+        nb += PipelineElement('ResampleImages', voxel_size=5)
+
+        nb.base_element.cache_folder = self.cache_folder_path
+        CacheManager.clear_cache_files(nb.base_element.cache_folder, True)
+        # set the config so that caching works
+        nb.set_params(**{'SmoothImages__fwhm': 10, 'ResampleImages__voxel_size': 5})
+
+        nb.test_transform(self.X)
+
+        self.assertTrue(os.path.exists("./neuro_branch_testcase_0_transformed.nii"))
+        os.remove("./neuro_branch_testcase_0_transformed.nii")
+
+    def test_test_transform_multi(self):
+        nb = NeuroBranch('neuro_branch')
+        nb += PipelineElement('SmoothImages', fwhm=10)
+        nb += PipelineElement('ResampleImages', voxel_size=5)
+
+        nb.base_element.cache_folder = self.cache_folder_path
+        CacheManager.clear_cache_files(nb.base_element.cache_folder, True)
+        # set the config so that caching works
+        nb.set_params(**{'SmoothImages__fwhm': 10, 'ResampleImages__voxel_size': 5})
+
+        nb.test_transform(self.X, nr_of_tests=3)
+
+        for i in range(3):
+            self.assertTrue(os.path.exists("./neuro_branch_testcase_{}_transformed.nii".format(str(i))))
+            os.remove("./neuro_branch_testcase_{}_transformed.nii".format(str(i)))
+
+    def test_test_transform_maskatlas_error(self):
+        nb = NeuroBranch('neuro_branch')
+        nb += PipelineElement('SmoothImages', fwhm=10)
+        nb += PipelineElement('ResampleImages', voxel_size=5)
+        nb += PipelineElement('BrainAtlas', rois=['Hippocampus_L', 'Hippocampus_R'],
+                               atlas_name="AAL", extract_mode='vec')
+
+        nb.base_element.cache_folder = self.cache_folder_path
+        CacheManager.clear_cache_files(nb.base_element.cache_folder, True)
+        # set the config so that caching works
+        nb.set_params(**{'SmoothImages__fwhm': 10, 'ResampleImages__voxel_size': 5})
+
+        with self.assertRaises(ValueError):
+            nb.test_transform(self.X)
+
+    def test_core_element_error(self):
+        nb = NeuroBranch('neuro_branch')
+        with self.assertRaises(ValueError):
+            nb += PipelineElement('SVC')
+

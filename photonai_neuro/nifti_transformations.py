@@ -3,6 +3,8 @@ import numpy as np
 from sklearn.base import BaseEstimator
 from nilearn.image import resample_img, smooth_img, index_img
 from nibabel.nifti1 import Nifti1Image
+from skimage.util.shape import view_as_windows
+from nilearn import image
 
 from photonai.photonlogger.logger import logger
 
@@ -109,15 +111,14 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
         return resampled_img
 
 
-class PatchImages(BaseEstimator):
+class PatchImages(BaseEstimator, NeuroTransformerMixin):
 
-    def __init__(self, patch_size=25, random_state=42, nr_of_processes=3):
-        logger.info("Nr or processes: " + str(nr_of_processes))
-        super(PatchImages, self).__init__(output_img=True, nr_of_processes=nr_of_processes)
+    def __init__(self, patch_size=25, nr_of_processes=1):
+        super(PatchImages, self).__init__(output_img=True)
         # Todo: give cache folder to mother class
 
+        self.nr_of_processes = nr_of_processes
         self.patch_size = patch_size
-        self.random_state = random_state
 
     def fit(self, X, y=None, **kwargs):
         return self
@@ -126,30 +127,38 @@ class PatchImages(BaseEstimator):
         logger.info("Drawing patches")
         return self.draw_patches(X, self.patch_size)
 
-
     @staticmethod
     def draw_patches(patch_x, patch_size):
-        if not isinstance(patch_x, list):
-            return PatchImages.draw_patch_from_mri(patch_x, patch_size)
+
+        if isinstance(patch_x, str):
+            patch_x = np.ascontiguousarray(image.load_img(patch_x).get_data())
+        elif isinstance(patch_x, Nifti1Image):
+            patch_x = np.ascontiguousarray(patch_x.dataobj)
+        elif isinstance(patch_x, np.ndarray):
+            if len(patch_x.shape) == 1:
+                patch_x = list(patch_x)
+        elif isinstance(patch_x, list):
+            pass
         else:
+            msg = "Could not read input data."
+            logger.error(msg)
+            raise ValueError(msg)
+
+        if isinstance(patch_x, list):
+            if all([isinstance(px, str) for px in patch_x]):
+                patch_x = [np.ascontiguousarray(image.load_img(px).get_data()) for px in patch_x]
             return_list = []
             for p in patch_x:
-                print(str(p))
+
                 return_list.append(PatchImages.draw_patch_from_mri(p, patch_size))
             return return_list
 
+        return PatchImages.draw_patch_from_mri(patch_x, patch_size)
+
+
     @staticmethod
-    def draw_patch_from_mri(patch_x, patch_size):
-        # logger.info("drawing patch..")
-        if isinstance(patch_x, str):
-            from nilearn import image
-            patch_x = np.ascontiguousarray(image.load_img(patch_x).get_data())
+    def draw_patch_from_mri(patch_x: np.ndarray, patch_size):
 
-        if isinstance(patch_x, Nifti1Image):
-            patch_x = np.ascontiguousarray(patch_x.dataobj)
-
-        # Todo: import is failing; why?
-        from skimage.util.shape import view_as_windows
         patches_drawn = view_as_windows(patch_x, (patch_size, patch_size, 1), step=1)
 
         patch_list_length = patches_drawn.shape[0]
@@ -164,7 +173,7 @@ class PatchImages(BaseEstimator):
         return output_matrix
 
     def copy_me(self):
-        return PatchImages(self.patch_size, self.random_state, self.nr_of_processes)
+        return PatchImages(self.patch_size, self.nr_of_processes)
 
     def _draw_single_patch(self):
-        pass
+        raise NotImplementedError("Not implemented yet.")

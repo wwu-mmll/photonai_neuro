@@ -88,10 +88,11 @@ class AtlasLibrary:
                        'MNI_ICBM152_WholeBrain': 'mni_icbm152_t1_tal_nlin_sym_09a_mask.nii.gz',
                        'Cerebellum': 'P_08_Cere.nii.gz'}
 
+    LIBRARY = dict()
+
     def __init__(self):
         self.photon_atlases = self._load_photon_atlases()
         self.photon_masks = self._load_photon_masks()
-        self.library = dict()
 
     def _load_photon_atlases(self):
         dir_atlases = path.join(path.dirname(inspect.getfile(BrainAtlas)), 'atlases')
@@ -174,7 +175,7 @@ class AtlasLibrary:
                 The indices in map image ARE NOT the same as those in your *_labels.txt! Ignoring *_labels.txt.
                 MapImage: 
                 {}
-                File:
+                File: 
                 {}
                 """.format(str(sorted(self.indices)), str(sorted(list(labels_dict.keys())))))
 
@@ -204,7 +205,7 @@ class AtlasLibrary:
                 roi.is_empty = True
 
         # finally add atlas to atlas library
-        self.library[(atlas_name, str(target_affine), str(target_shape), str(mask_threshold))] = atlas_object
+        AtlasLibrary.LIBRARY[(atlas_name, str(target_affine), str(target_shape), str(mask_threshold))] = atlas_object
         logger.debug("BrainAtlas: Done adding atlas to library!")
 
     def _add_mask_to_library(self, mask_name: str = '', target_affine=None, target_shape=None, mask_threshold=0.5):
@@ -233,20 +234,20 @@ class AtlasLibrary:
             logger.error('No voxels in mask after resampling (' + mask_object.name + ').')
             mask_object.is_empty = True
 
-        self.library[(mask_object.name, str(target_affine), str(target_shape), str(mask_threshold))] = mask_object
+        AtlasLibrary.LIBRARY[(mask_object.name, str(target_affine), str(target_shape), str(mask_threshold))] = mask_object
         logger.debug("BrainMask: Done adding mask to library!")
 
     def get_atlas(self, atlas_name, target_affine=None, target_shape=None, mask_threshold=None):
-        if (atlas_name, str(target_affine), str(target_shape), str(mask_threshold)) not in self.library:
+        if (atlas_name, str(target_affine), str(target_shape), str(mask_threshold)) not in AtlasLibrary.LIBRARY:
             self._add_atlas_to_library(atlas_name, target_affine, target_shape, mask_threshold)
 
-        return self.library[(atlas_name, str(target_affine), str(target_shape), str(mask_threshold))]
+        return AtlasLibrary.LIBRARY[(atlas_name, str(target_affine), str(target_shape), str(mask_threshold))]
 
     def get_mask(self, mask_name, target_affine=None, target_shape=None, mask_threshold=0.5):
-        if (mask_name, str(target_affine), str(target_shape)) not in self.library:
+        if (mask_name, str(target_affine), str(target_shape)) not in AtlasLibrary.LIBRARY:
             self._add_mask_to_library(mask_name, target_affine, target_shape, mask_threshold)
 
-        return self.library[(mask_name, str(target_affine), str(target_shape), str(mask_threshold))]
+        return AtlasLibrary.LIBRARY[(mask_name, str(target_affine), str(target_shape), str(mask_threshold))]
 
     @staticmethod
     def _resample(mask, target_affine, target_shape):
@@ -385,7 +386,7 @@ class BrainAtlas(BaseEstimator):
         mask_img = _utils.check_niimg_3d(mask_img)
         mask, mask_affine = masking._load_mask_img(mask_img)
         mask_img = image.new_img_like(mask_img, mask, mask_affine)
-        mask_data = _utils.as_ndarray(mask_img.get_data(),
+        mask_data = _utils.as_ndarray(mask_img.get_fdata(),
                                       dtype=np.bool)
         return series[mask_data].T
 
@@ -401,7 +402,7 @@ class BrainAtlas(BaseEstimator):
         for i, roi in enumerate(roi_objects):
             mask, mask_affine = masking._load_mask_img(roi.mask)
             mask_img = image.new_img_like(roi.mask, mask, mask_affine)
-            mask_data = _utils.as_ndarray(mask_img.get_data(), dtype=np.bool)
+            mask_data = _utils.as_ndarray(mask_img.get_fdata(), dtype=np.bool)
 
             if self.collection_mode == 'list':
                 unmasked[mask_data] = X[i]
@@ -476,16 +477,16 @@ class BrainMask(BaseEstimator):
     @staticmethod
     def _get_box(in_imgs, roi):
         # get ROI infos
-        map = roi.get_data()
+        map = roi.get_fdata()
         true_points = np.argwhere(map)
         corner1 = true_points.min(axis=0)
         corner2 = true_points.max(axis=0)
         box = []
         for img in in_imgs:
             if isinstance(img, str):
-                data = image.load_img(img).get_data()
+                data = image.load_img(img).get_fdata()
             else:
-                data = img.get_data()
+                data = img.get_fdata()
             tmp = data[corner1[0]:corner2[0] + 1, corner1[1]:corner2[1] + 1, corner1[2]:corner2[2] + 1]
             box.append(tmp)
         return np.asarray(box)

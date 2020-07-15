@@ -34,7 +34,7 @@ class BrainAtlasTests(NeuroBaseTest):
         custom_atlas = os.path.join(self.atlas_folder, 'AAL_SPM12/AAL.nii.gz')
 
         atlas = PipelineElement('BrainAtlas', atlas_name=custom_atlas, extract_mode='vec', batch_size=20)
-        X_masked = atlas.transform(self.X)
+        _ = atlas.transform(self.X)
 
         with self.assertRaises(FileNotFoundError):
             atlas = PipelineElement('BrainAtlas', atlas_name='XXXXX', extract_mode='vec', batch_size=20)
@@ -58,6 +58,8 @@ class BrainAtlasTests(NeuroBaseTest):
             "-".join(rois)
             name = os.path.join(self.test_folder, atlas + '_' + "-".join(rois))
             brain_atlas._validity_check_roi_extraction(X_t[0], filename=name)
+            self.assertTrue(os.path.exists(name+".nii"))
+            os.remove(name+".nii")
 
 
 class BrainMaskTests(NeuroBaseTest):

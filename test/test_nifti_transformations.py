@@ -4,6 +4,7 @@ from nilearn.image import resample_img, index_img, smooth_img
 
 from photonai.base import PipelineElement
 
+from photonai_neuro.nifti_transformations import PatchImages
 from photonai_neuro import NeuroBranch
 from test.test_neuro import NeuroBaseTest
 
@@ -104,4 +105,16 @@ class ResampleImagesTests(NeuroBaseTest):
 class PatchImagesTests(NeuroBaseTest):
 
     def setUp(self) -> None:
-        pass
+        super(PatchImagesTests, self).setUp()
+        self.pi = PatchImages()
+
+    def test_transformation_single(self):
+        # no logical tests yet
+        result = self.pi.transform(self.X[0])
+        self.assertIsInstance(result, np.ndarray)
+
+    def test_transformation_multi(self):
+        # no logical tests yet
+        result = self.pi.transform(self.X)
+        self.assertIsInstance(result, list)
+        self.assertIsInstance(result[0], np.ndarray)

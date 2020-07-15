@@ -46,40 +46,35 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
         elif isinstance(pipe_element, CallbackElement):
             super(NeuroBranch, self).__iadd__(pipe_element)
         else:
-            logger.error('PipelineElement {} is not part of the Neuro module:'.format(pipe_element.name))
+            msg = 'PipelineElement {} is not part of the Neuro module:'.format(pipe_element.name)
+            logger.error(msg)
+            raise ValueError(msg)
 
         return self
 
     def test_transform(self, X, nr_of_tests=1, save_to_folder='.', **kwargs):
-        nr_of_tested = 0
 
         if kwargs and len(kwargs) > 0:
             self.set_params(**kwargs)
-
         copy_of_me = self.copy_me()
         copy_of_me.nr_of_processes = 1
         copy_of_me.output_img = True
-        for p_element in copy_of_me.pipeline_elements:
+        for p_element in copy_of_me.elements:
             if isinstance(p_element.base_element, BrainAtlas):
                 p_element.base_element.extract_mode = 'list'
 
         filename = self.name + "_testcase_"
 
-        for x_el in X:
-            if nr_of_tested > nr_of_tests:
-                break
+        new_pics, _, _ = copy_of_me.transform(X[:nr_of_tests])
 
-            new_pic, _, _ = copy_of_me.transform(x_el)
-
-            if isinstance(new_pic, list):
-                new_pic = new_pic[0]
+        for i, new_pic in enumerate(new_pics):
             if not isinstance(new_pic, Nifti1Image):
-                raise ValueError("last element of branch does not return a nifti image")
+                msg = "Last element of NeuroBranch does not return a nifti image."
+                logger.error(msg)
+                raise ValueError(msg)
 
-            new_filename = os.path.join(save_to_folder, filename + str(nr_of_tested) + "_transformed.nii")
+            new_filename = os.path.join(save_to_folder, filename + str(i) + "_transformed.nii")
             new_pic.to_filename(new_filename)
-
-            nr_of_tested += 1
 
     def transform(self, X, y=None, **kwargs):
 
