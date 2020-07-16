@@ -28,5 +28,6 @@ In addition, it supports a range of advanced feature extraction and feature engi
     install_requires=[
         'photonai',
         'nibabel',
-        'nilearn']
+        'nilearn',
+        'scikit-image']
 )
