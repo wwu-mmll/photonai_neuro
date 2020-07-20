@@ -15,7 +15,7 @@ results_folder = './tmp/'
 cache_folder = './tmp/cache'
 
 # GET DATA FROM OASIS
-n_subjects = 200
+n_subjects = 20
 dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
 age = dataset_files.ext_vars['age'].astype(float)
 gender = dataset_files.ext_vars['mf'].astype(str)
@@ -53,18 +53,18 @@ neuro_branch = NeuroBranch('NeuroBranch')
 neuro_branch += brain_atlas
 
 # NOW TRAIN ATLAS MAPPER
-atlas_mapper = AtlasMapper(create_surface_plots=True)
-atlas_mapper.generate_mappings(my_pipe, neuro_branch, results_folder)
-atlas_mapper.fit(X, y)
+atlas_mapper = AtlasMapper(neuro_branch, my_pipe, results_folder, create_surface_plots=True)
+#atlas_mapper.generate_mappings()
+#atlas_mapper.fit(X, y)
 
 # LOAD TRAINED ATLAS MAPPER AND PREDICT
-atlas_mapper = AtlasMapper()
+atlas_mapper = AtlasMapper.load_from_folder(folder=results_folder, analysis_name='atlas_mapper_example')
 # you can either load an atlas mapper by specifying the atlas_mapper_meta.json file that has been created during fit()
 # or simply specify the results folder in which your model was saved (and you can also specify the analysis name in case
 # there are multiple atlas mapper within one folder)
 
 #atlas_mapper.load_from_file(os.path.join(results_folder) + 'atlas_mapper_meta.json')
-atlas_mapper.load_from_folder(folder=results_folder, analysis_name='atlas_mapper_example')
+#atlas_mapper.load_from_folder(folder=results_folder, analysis_name='atlas_mapper_example')
 print(atlas_mapper.predict(X))
 debug = True
 

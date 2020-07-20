@@ -36,9 +36,6 @@ class NeuroBaseTest(PhotonBaseTest):
 
 class NeuroTests(NeuroBaseTest):
 
-    def test_atlas_mapper(self):
-        pass
-
     def test_inverse_transform(self):
         settings = OutputSettings(project_folder=self.tmp_folder_path,
                                   overwrite_results=True)

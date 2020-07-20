@@ -1,8 +1,17 @@
+"""
+Questions:
+Wenn ROIs übergeben werden wirklich nur die nehmen, die passen, keine Schreibfehler raisen?
+
+ToDo:
+inverse mapping data_X.get_fdata()[:,:,:,0] - data_X_2
+"""
+
 import glob
 import inspect
 import time
 from os import path
 from pathlib import Path
+from typing import Union
 
 import nibabel as nib
 import numpy as np
@@ -10,48 +19,14 @@ import pandas as pd
 from nilearn import image, masking, _utils
 from nilearn._utils.niimg import _safe_get_data
 from nilearn.image import math_img
-from nilearn.input_data import NiftiMasker
 from sklearn.base import BaseEstimator
+from nilearn.input_data import NiftiMasker
 
-#from photonai.helper.helper import Singleton
 from photonai.photonlogger.logger import logger
 
-
-class RoiObject:
-
-    def __init__(self, index=0, label='', size=None, mask=None):
-        self.index = index
-        self.label = label
-        self.size = size
-        self.mask = mask
-        self.is_empty = False
+from photonai_neuro.objects import MaskObject, AtlasObject, RoiObject
 
 
-class MaskObject:
-
-    def __init__(self, name: str = '', mask_file: str = '', mask = None):
-        self.name = name
-        self.mask_file = mask_file
-        self.mask = mask
-        self.is_empty = False
-
-
-class AtlasObject:
-
-    def __init__(self, name='', path='', labels_file='', mask_threshold=None, affine=None, shape=None, indices=list()):
-        self.name = name
-        self.path = path
-        self.labels_file = labels_file
-        self.mask_threshold = mask_threshold
-        self.indices = indices
-        self.roi_list = list()
-        self.map = None
-        self.atlas = None
-        self.affine = affine
-        self.shape = shape
-
-
-#@Singleton
 class AtlasLibrary:
     ATLAS_DICTIONARY = {'AAL': 'AAL.nii.gz',
                         'HarvardOxford_Cortical_Threshold_25': 'HarvardOxford-cort-maxprob-thr25.nii.gz',
@@ -95,6 +70,10 @@ class AtlasLibrary:
         self.photon_masks = self._load_photon_masks()
 
     def _load_photon_atlases(self):
+        """
+        Intern function for creating AtlasObjects for every available Atlas in the ATLAS_DICTIONARY.
+        :return: photon_atlases: dict, dict atlas by atlas_id
+        """
         dir_atlases = path.join(path.dirname(inspect.getfile(BrainAtlas)), 'atlases')
         photon_atlases = dict()
         for atlas_id, atlas_info in self.ATLAS_DICTIONARY.items():
@@ -106,6 +85,10 @@ class AtlasLibrary:
         return photon_atlases
 
     def _load_photon_masks(self):
+        """
+        Intern function for creating MaskObjects for every available Mask in the MASK_DICTIONARY.
+        :return: photon_masks: dict, Mask by mask_id
+        """
         dir_atlases = path.join(path.dirname(inspect.getfile(BrainAtlas)), 'atlases')
         photon_masks = dict()
         for mask_id, mask_info in self.MASK_DICTIONARY.items():
@@ -114,22 +97,30 @@ class AtlasLibrary:
         return photon_masks
 
     def list_rois(self, atlas: str):
+        """
+        ROI listing of specific atlas
+        :param atlas: str, atlas name
+        :return: roi_names: list, list of ROIs
+        """
         if atlas not in self.ATLAS_DICTIONARY.keys():
-            logger.info('Atlas {} is not supported.'.format(atlas))
-            return
-
-        atlas = self.get_atlas(atlas)
-        roi_names = [roi.label for roi in atlas.roi_list]
-        logger.info(str(roi_names))
+            logger.warning('Atlas {} is not supported.'.format(atlas))
+            roi_names = []
+        else:
+            atlas = self.get_atlas(atlas)
+            roi_names = [roi.label for roi in atlas.roi_list]
         return roi_names
 
-    def _add_atlas_to_library(self, atlas_name, target_affine=None, target_shape=None, mask_threshold=None):
-        # Todo: find solution for multiprocessing spaming
-        # print('Adding atlas to library: {} - Shape {} - Affine {} - Threshold {}'.format(atlas_name,
-        #                                                                                        target_shape,
-        #                                                                                        target_affine,
-        #                                                                                        mask_threshold))
+    def _add_atlas_to_library(self, atlas_name:str, target_affine=None, target_shape=None, mask_threshold=None):
+        """
+        Loading Atlas into the Library by name.
+        :param atlas_name:
+        :param target_affine:
+        :param target_shape:
+        :param mask_threshold:
+        :return:
 
+        Todo: find solution for multiprocessing spaming
+        """
         # load atlas object from photon_atlasses
         if atlas_name in self.photon_atlases.keys():
             original_atlas_object = self.photon_atlases[atlas_name]
@@ -210,10 +201,6 @@ class AtlasLibrary:
 
     def _add_mask_to_library(self, mask_name: str = '', target_affine=None, target_shape=None, mask_threshold=0.5):
         # Todo: find solution for multiprocessing spaming
-        # print('Adding mask to library: {} - Shape {} - Affine {} - Threshold {}'.format(mask_name,
-        #                                                                                      target_shape,
-        #                                                                                      target_affine,
-        #                                                                                      mask_threshold))
 
         if mask_name in self.photon_masks.keys():
             original_mask_object = self.photon_masks[mask_name]
@@ -257,7 +244,8 @@ class AtlasLibrary:
             orient_data = ''.join(nib.aff2axcodes(target_affine))
             orient_roi = ''.join(nib.aff2axcodes(mask.affine))
             if not orient_roi == orient_data:
-                logger.error('Orientation of mask and data are not the same: ' + orient_roi + ' (mask) vs. ' + orient_data + ' (data)')
+                logger.error('Orientation of mask and data are not the same: ' +
+                             orient_roi + ' (mask) vs. ' + orient_data + ' (data)')
         return mask
 
     @staticmethod
@@ -276,28 +264,65 @@ class AtlasLibrary:
         return AtlasObject(name=atlas_file, path=atlas_file, labels_file=labels_file)
 
     @staticmethod
-    def find_rois_by_label(atlas_obj, query_list):
+    def find_rois_by_label(atlas_obj: AtlasObject, query_list: list):
+        """
+        Returns all ROIs of given AtlasObject with roi_label in query_list.
+        :param atlas_obj: AtlasObject, the object we are searching in
+        :param query_list: serach after the ROI labels
+        :return:
+        """
         return [i for i in atlas_obj.roi_list if i.label in query_list]
 
     @staticmethod
-    def find_rois_by_index(atlas_obj, query_list):
+    def find_rois_by_index(atlas_obj: AtlasObject, query_list: list):
+        """
+        Returns all ROIs of given AtlasObject with roi_index in query_list.
+        :param atlas_obj: AtlasObject, the object we are searching in
+        :param query_list: serach after the ROI index
+        :return:
+        """
         return [i for i in atlas_obj.roi_list if i.index in query_list]
 
     @staticmethod
-    def get_nii_files_from_folder(folder_path, extension=".nii.gz"):
+    def get_nii_files_from_folder(folder_path: str, extension: str=".nii.gz"):
+        """
+        Returns all file with given extension in folder path.
+        :param folder_path: str, path to folder
+        :param extension: str, file extension
+        :return: _: list
+        """
         return glob.glob(folder_path + '*' + extension)
 
 
 class BrainAtlas(BaseEstimator):
-    def __init__(self, atlas_name: str, extract_mode: str = 'vec',
-                 mask_threshold=None, background_id=0, rois='all'):
+    """
+    BrainAtlas is a transformer calculate brain atlases to input niftis.
 
-        # ToDo
+    Parameter
+    ---------
+    * `atlas_name`: [str]:
+
+    * `extract_mode`: [str]:
+
+    * `mask_threshold`: [str]:
+
+    * `background_id`: [str]:
+
+    # ToDo
         #   + check RAS vs. LPS view-type and provide warning
         #  - unit tests
         #  Later
         #  - add support for overlapping ROIs and probabilistic atlases using 4d-nii
         #  - add support for 4d resting-state data using nilearn
+    """
+    def __init__(self,
+                 atlas_name: str,
+                 extract_mode: str = 'vec',
+                 mask_threshold: float = None,
+                 background_id: int = 0,
+                 rois: Union[list, str] = 'all',
+                 example_data = None):
+
 
         self.atlas_name = atlas_name
         self.extract_mode = extract_mode
@@ -313,27 +338,43 @@ class BrainAtlas(BaseEstimator):
         self.shape = None
         self.needs_y = False
         self.needs_covariates = False
+        self.roi_allocation = {}
+        if example_data:
+            _ = self.transform(example_data)
 
     def fit(self, X, y):
         return self
 
     def transform(self, X, y=None, **kwargs):
+        """
+
+        :param X: input data
+        :param y: targets
+        :param kwargs:
+        :return: roi_data: np.ndarray, ROIs data for given brain atlas in concat or list form.
+        """
 
         if len(X) < 1:
-            raise Exception("Brain Atlas: Did not get any data in parameter X")
+            msg = "Brain Atlas: Did not get any data in parameter X"
+            logger.error(msg)
+            raise Exception(msg)
+
+
 
         if self.collection_mode == 'list' or self.collection_mode == 'concat':
             collection_mode = self.collection_mode
         else:
-            collection_mode = 'concat'
-            logger.error("Collection mode {} not supported. Use 'list' or 'concat' instead."
-                           "Falling back to concat mode.".format(self.collection_mode))
+            msg = "Collection mode {} not supported. Use 'list' or 'concat' instead." +\
+                           "Falling back to concat mode.".format(self.collection_mode)
+            logger.error(msg)
+            raise ValueError(msg)
 
         # 1. validate if all X are in the same space and have the same voxelsize and have the same orientation
 
-        # 2. load sample data to get target affine and target shape to adapt the brain atlas
-
+        # get ROI mask
         self.affine, self.shape = BrainMask.get_format_info_from_first_image(X)
+        atlas_obj = AtlasLibrary().get_atlas(self.atlas_name, self.affine, self.shape, self.mask_threshold)
+        roi_objects = self._get_rois(atlas_obj, which_rois=self.rois, background_id=self.background_id)
 
         # load all niftis to memory
         if isinstance(X, list):
@@ -348,10 +389,6 @@ class BrainAtlas(BaseEstimator):
         else:
             n_subjects = X.shape[-1]
 
-        # get ROI mask
-        atlas_obj = AtlasLibrary().get_atlas(self.atlas_name, self.affine, self.shape, self.mask_threshold)
-        roi_objects = self._get_rois(atlas_obj, which_rois=self.rois, background_id=self.background_id)
-
         roi_data = [list() for i in range(n_subjects)]
         roi_data_concat = list()
         t1 = time.time()
@@ -360,7 +397,10 @@ class BrainAtlas(BaseEstimator):
         series = _utils.as_ndarray(_safe_get_data(X), dtype='float32', order="C", copy=True)
         mask_indices = list()
 
+        # calculate roi_data for every ROI object by looping
         for i, roi in enumerate(roi_objects):
+            self.roi_allocation[roi.label] = i
+
             logger.debug("Extracting ROI {}".format(roi.label))
             # simply call apply_mask to extract one roi
             extraction = self.apply_mask(series, roi.mask)
@@ -379,10 +419,17 @@ class BrainAtlas(BaseEstimator):
             self.mask_indices = mask_indices
 
         elapsed_time = time.time() - t1
-        logger.debug("Time for extracting {} ROIs in {} subjects: {} seconds".format(len(roi_objects), n_subjects, elapsed_time))
+        logger.debug("Time for extracting {} ROIs in {} subjects: {} seconds".format(len(roi_objects),
+                                                                                     n_subjects, elapsed_time))
         return roi_data
 
     def apply_mask(self, series, mask_img):
+        """
+        Apply mask on series.
+        :param series: np.ndarray, data working on
+        :param mask_img:
+        :return:
+        """
         mask_img = _utils.check_niimg_3d(mask_img)
         mask, mask_affine = masking._load_mask_img(mask_img)
         mask_img = image.new_img_like(mask_img, mask, mask_affine)
@@ -391,6 +438,13 @@ class BrainAtlas(BaseEstimator):
         return series[mask_data].T
 
     def inverse_transform(self, X, y=None, **kwargs):
+        """
+        Reconstruct image from transformed data.
+        :param X: data
+        :param y: targets
+        :param kwargs:
+        :return:
+        """
         X = np.asarray(X)
 
         # get ROI masks
@@ -477,7 +531,7 @@ class BrainMask(BaseEstimator):
     @staticmethod
     def _get_box(in_imgs, roi):
         # get ROI infos
-        map = roi.get_fdata()
+        map = roi.mask.get_fdata()
         true_points = np.argwhere(map)
         corner1 = true_points.min(axis=0)
         corner2 = true_points.max(axis=0)

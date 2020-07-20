@@ -18,5 +18,9 @@
    "PatchImages":[
       "photonai_neuro.nifti_transformations.PatchImages",
       "Transformer"
+   ],
+   "RoiFilter": [
+      "photonai_neuro.objects.RoiFilter",
+      "Transformer"
    ]
 }
