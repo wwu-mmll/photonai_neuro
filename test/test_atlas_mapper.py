@@ -91,7 +91,7 @@ class AtlasMapperTests(NeuroBaseTest):
         atlas_mapper = AtlasMapper(neuro_element=neuro_branch,
                                    hyperpipe=my_pipe,
                                    folder=results_folder,
-                                   create_surface_plots=True)
+                                   create_surface_plots=False)
         with self.assertRaises(Exception):
             atlas_mapper.predict(X)
         atlas_mapper.fit(X, y)
