@@ -16,13 +16,9 @@ class BrainAtlasTests(NeuroBaseTest):
         brain_atlas = BrainAtlas(self.atlas_name, "vec", rois=self.roi_list)
         X_star = brain_atlas.transform(self.X)
         self.assertTrue(len(self.X), len(brain_atlas.rois))
-        #X_inv = brain_atlas.inverse_transform(X_star)
-        #data_X = image.load_img(self.X)
-        #data_X_2 = X_inv.get_fdata()
 
         brain_atlas_mean = BrainAtlas(self.atlas_name, "mean", rois='all')
         X_star = brain_atlas_mean.transform(self.X)
-        #X_inv = brain_atlas_mean.inverse_transform(X_star)
         # Todo: how to compare?
         debug = True
 
@@ -44,13 +40,13 @@ class BrainAtlasTests(NeuroBaseTest):
             atlas = PipelineElement('BrainAtlas', atlas_name='XXXXX', extract_mode='vec', batch_size=20)
             atlas.transform(self.X)
 
-    def ttest_all_atlases(self):
+    def test_all_atlases(self):
         for atlas in AtlasLibrary().ATLAS_DICTIONARY.keys():
             print("Running tests for atlas {}".format(atlas))
             brain_atlas = PipelineElement('BrainAtlas', atlas_name=atlas, extract_mode='vec')
             brain_atlas.transform(self.X)
 
-    def ttest_validity_check_roi_extraction(self):
+    def test_validity_check_roi_extraction(self):
         for atlas in AtlasLibrary().ATLAS_DICTIONARY.keys():
             print("Checking atlas {}".format(atlas))
             rois = AtlasLibrary().get_atlas(atlas).roi_list[1:3]
