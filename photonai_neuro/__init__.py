@@ -13,7 +13,7 @@ if not os.path.isfile(registered_file):
     with open(os.path.join(registered_file), "w") as f:
         f.write(str(datetime.now()))
 
-
+from .atlas_stacker import AtlasStacker
 from .atlas_mapper import AtlasMapper
 from .brain_atlas import BrainMask, BrainAtlas, AtlasLibrary
 from .neuro_branch import NeuroBranch

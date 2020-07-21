@@ -47,7 +47,7 @@ my_pipe += PipelineElement('LinearSVC')
 #brain_atlas = PipelineElement('BrainAtlas', atlas_name="Yeo_7", extract_mode='vec',
 #                                rois='all', batch_size=200)
 brain_atlas = PipelineElement('BrainAtlas', atlas_name="AAL",
-                              rois=['Hippocampus_L', 'Hippocampus_R', "Frontal_Sup_Orb_L"], batch_size=200)
+                              rois=["Frontal_Sup_Orb_L"], batch_size=200)
 
 neuro_branch = NeuroBranch('NeuroBranch')
 neuro_branch += brain_atlas
@@ -55,10 +55,10 @@ neuro_branch += brain_atlas
 # NOW TRAIN ATLAS MAPPER
 atlas_mapper = AtlasMapper(neuro_branch, my_pipe, results_folder, create_surface_plots=True)
 #atlas_mapper.generate_mappings()
-#atlas_mapper.fit(X, y)
+atlas_mapper.fit(X, y)
 
 # LOAD TRAINED ATLAS MAPPER AND PREDICT
-atlas_mapper = AtlasMapper.load_from_folder(folder=results_folder, analysis_name='atlas_mapper_example')
+#atlas_mapper = AtlasMapper.load_from_folder(folder=results_folder, analysis_name='atlas_mapper_example')
 # you can either load an atlas mapper by specifying the atlas_mapper_meta.json file that has been created during fit()
 # or simply specify the results folder in which your model was saved (and you can also specify the analysis name in case
 # there are multiple atlas mapper within one folder)

@@ -100,7 +100,7 @@ class AtlasMapper:
         X_extracted, _, _ = self.neuro_element.transform(X)
         X_extracted = AtlasMapper._reshape_roi_data(X_extracted)
 
-        # save neuro branch to file
+        # save neuro element to file
         joblib.dump(self.neuro_element, os.path.join(self.folder, 'neuro_element.pkl'), compress=1)
 
         hyperpipe_infos = dict()
