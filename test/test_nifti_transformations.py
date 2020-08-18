@@ -1,9 +1,10 @@
 import numpy as np
+import warnings
+
 from nibabel.nifti1 import Nifti1Image
 from nilearn.image import resample_img, index_img, smooth_img
 
 from photonai.base import PipelineElement
-
 from photonai_neuro.nifti_transformations import PatchImages
 from photonai_neuro import NeuroBranch
 from test.test_neuro import NeuroBaseTest
@@ -49,8 +50,21 @@ class SmoothImagesTests(NeuroBaseTest):
         self.assertIsInstance(photon_smoothed_array, np.ndarray)
         self.assertIsInstance(photon_smoothed_img[0], Nifti1Image)
 
-        self.assertTrue(np.array_equal(photon_smoothed_array[1], nilearn_smoothed_array))
-        self.assertTrue(np.array_equal(photon_smoothed_img[1].dataobj, nilearn_smoothed_img[1].dataobj))
+        np.testing.assert_array_equal(photon_smoothed_array[1], nilearn_smoothed_array)
+        np.testing.assert_array_equal(photon_smoothed_img[1].dataobj, nilearn_smoothed_img[1].dataobj)
+
+    def test_some_fwhm(self):
+        for fwhm in [3, [2,3,2], None, 'fast']:
+            smoother = PipelineElement('SmoothImages', hyperparameters={}, fwhm=fwhm)
+            photon_smoothed_array, _, _ = smoother.transform(self.X[0])
+            np.testing.assert_array_equal(photon_smoothed_array, smooth_img(self.X[0], fwhm=fwhm).dataobj)
+
+        with warnings.catch_warnings(record=True) as w:
+            PipelineElement('SmoothImages', hyperparameters={}, fwhm=None)
+            assert len(w) == 1
+
+        with self.assertRaises(ValueError):
+            PipelineElement('SmoothImages', hyperparameters={}, fwhm="quick")
 
 
 class ResampleImagesTests(NeuroBaseTest):
@@ -101,6 +115,21 @@ class ResampleImagesTests(NeuroBaseTest):
         self.assertTrue(np.array_equal(nilearn_resampled_array, resampled_img))
         self.assertTrue(np.array_equal(branch_resampled_img[1].dataobj, nilearn_resampled_img[1].dataobj))
 
+    def test_interpolation(self):
+        for i in ['continuous', 'linear', 'nearest']:
+            resampler = PipelineElement('ResampleImages', hyperparameters={}, interpolation=i, output_img=False)
+            resampled_img, _, _ = resampler.transform(self.X[0])
+            np.testing.assert_array_equal(resampled_img, resample_img(self.X[0],
+                                                                      target_affine=np.diag([3,3,3]),
+                                                                      interpolation=i).dataobj)
+
+        with self.assertRaises(NameError):
+            PipelineElement('ResampleImages', hyperparameters={}, interpolation="l2")
+
+    def test_voxel_size(self):
+        with self.assertRaises(ValueError):
+            PipelineElement('ResampleImages', hyperparameters={}, voxel_size=[4,4,4,42])
+
 
 class PatchImagesTests(NeuroBaseTest):
 
@@ -112,6 +141,8 @@ class PatchImagesTests(NeuroBaseTest):
         # no logical tests yet
         result = self.pi.transform(self.X[0])
         self.assertIsInstance(result, np.ndarray)
+        with self.assertRaises(ValueError):
+            self.pi.transform(5)
 
     def test_transformation_multi(self):
         # no logical tests yet

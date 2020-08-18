@@ -9,6 +9,7 @@ inverse mapping data_X.get_fdata()[:,:,:,0] - data_X_2
 import glob
 import inspect
 import time
+import warnings
 from os import path
 from pathlib import Path
 from typing import Union
@@ -24,7 +25,7 @@ from nilearn.input_data import NiftiMasker
 
 from photonai.photonlogger.logger import logger
 
-from photonai_neuro.objects import MaskObject, AtlasObject, RoiObject
+from photonai_neuro.objects import MaskObject, AtlasObject, RoiObject, NiftiConverter
 
 
 class AtlasLibrary:
@@ -103,7 +104,9 @@ class AtlasLibrary:
         :return: roi_names: list, list of ROIs
         """
         if atlas not in self.ATLAS_DICTIONARY.keys():
-            logger.warning('Atlas {} is not supported.'.format(atlas))
+            msg = 'Atlas {} is not supported.'.format(atlas)
+            logger.warning(msg)
+            warnings.warn(msg)
             roi_names = []
         else:
             atlas = self.get_atlas(atlas)
@@ -218,7 +221,9 @@ class AtlasLibrary:
 
         # check if roi is empty
         if np.sum(mask_object.mask.dataobj != 0) == 0:
-            logger.error('No voxels in mask after resampling (' + mask_object.name + ').')
+            msg = 'No voxels in mask after resampling (' + mask_object.name + ').'
+            logger.error(msg)
+            raise ValueError(msg)
             mask_object.is_empty = True
 
         AtlasLibrary.LIBRARY[(mask_object.name, str(target_affine), str(target_shape), str(mask_threshold))] = mask_object
@@ -244,23 +249,31 @@ class AtlasLibrary:
             orient_data = ''.join(nib.aff2axcodes(target_affine))
             orient_roi = ''.join(nib.aff2axcodes(mask.affine))
             if not orient_roi == orient_data:
-                logger.error('Orientation of mask and data are not the same: ' +
-                             orient_roi + ' (mask) vs. ' + orient_data + ' (data)')
+                msg = 'Orientation of mask and data are not the same: ' + \
+                      orient_roi + ' (mask) vs. ' + orient_data + ' (data)'
+                logger.error(msg)
+                raise ValueError(msg)
         return mask
 
     @staticmethod
     def _check_custom_mask(mask_file):
         if not path.isfile(mask_file):
-            raise FileNotFoundError("Cannot find custom mask {}".format(mask_file))
+            msg = "Cannot find custom mask {}".format(mask_file)
+            logger.error(msg)
+            raise FileNotFoundError(msg)
         return MaskObject(name=mask_file, mask_file=mask_file)
 
     @staticmethod
     def _check_custom_atlas(atlas_file):
         if not path.isfile(atlas_file):
-            raise FileNotFoundError("Cannot find custom atlas {}".format(atlas_file))
+            msg = "Cannot find custom atlas {}".format(atlas_file)
+            logger.error(msg)
+            raise FileNotFoundError(msg)
         labels_file = path.split(atlas_file)[0] + '_labels.txt'
         if not path.isfile(labels_file):
-            logger.error("Didn't find .txt file with ROI labels. Using indices as labels.")
+            msg = "Didn't find .txt file with ROI labels. Using indices as labels."
+            logger.warning(msg)
+            warnings.warn(msg)
         return AtlasObject(name=atlas_file, path=atlas_file, labels_file=labels_file)
 
     @staticmethod
@@ -354,12 +367,7 @@ class BrainAtlas(BaseEstimator):
         :return: roi_data: np.ndarray, ROIs data for given brain atlas in concat or list form.
         """
 
-        if len(X) < 1:
-            msg = "Brain Atlas: Did not get any data in parameter X"
-            logger.error(msg)
-            raise Exception(msg)
-
-
+        X, n_subjects = NiftiConverter.transform(X)
 
         if self.collection_mode == 'list' or self.collection_mode == 'concat':
             collection_mode = self.collection_mode
@@ -375,19 +383,6 @@ class BrainAtlas(BaseEstimator):
         self.affine, self.shape = BrainMask.get_format_info_from_first_image(X)
         atlas_obj = AtlasLibrary().get_atlas(self.atlas_name, self.affine, self.shape, self.mask_threshold)
         roi_objects = self._get_rois(atlas_obj, which_rois=self.rois, background_id=self.background_id)
-
-        # load all niftis to memory
-        if isinstance(X, list):
-            n_subjects = len(X)
-            X = image.load_img(X)
-        elif isinstance(X, str):
-            n_subjects = 1
-            X = image.load_img(X)
-        elif isinstance(X, np.ndarray):
-            n_subjects = X.shape[0]
-            X = image.load_img(X)
-        else:
-            n_subjects = X.shape[-1]
 
         roi_data = [list() for i in range(n_subjects)]
         roi_data_concat = list()
@@ -413,8 +408,12 @@ class BrainAtlas(BaseEstimator):
                 mask_indices.append(np.ones(extraction[0].size) * i)
 
         if self.collection_mode == 'concat':
-            roi_data = np.concatenate(roi_data_concat, axis=1)
-            self.mask_indices = np.concatenate(mask_indices)
+            if n_subjects > 1:
+                roi_data = np.concatenate(roi_data_concat, axis=1)
+                self.mask_indices = np.concatenate(mask_indices)
+            else:
+                roi_data = np.array(roi_data_concat)
+                self.mask_indices = mask_indices
         else:
             self.mask_indices = mask_indices
 
@@ -504,20 +503,10 @@ class BrainMask(BaseEstimator):
 
     @staticmethod
     def get_format_info_from_first_image(X):
-        img = None
-        if isinstance(X, str):
-            img = image.load_img(X)
-        elif isinstance(X, list) or isinstance(X, np.ndarray):
-            if isinstance(X[0], str):
-                img = image.load_img(X[0])
-            elif isinstance(X[0], nib.Nifti1Image):
-                img = X[0]
-        elif isinstance(X, nib.Nifti1Image):
-            img = X
-        else:
-            error_msg = "Can only process strings as file paths to nifti images or nifti image object"
-            logger.error(error_msg)
-            raise ValueError(error_msg)
+
+        img, n_subjects = NiftiConverter.transform(X)
+        if n_subjects > 1:
+            img = img.slicer[:, :, :, 0]
 
         if img is not None:
             if len(img.shape) > 3:
@@ -526,7 +515,9 @@ class BrainMask(BaseEstimator):
                 img_shape = img.shape
             return img.affine, img_shape
         else:
-            raise ValueError("Could not load image for affine and shape definition.")
+            msg = "Could not load image for affine and shape definition."
+            logger.error(msg)
+            raise ValueError(msg)
 
     @staticmethod
     def _get_box(in_imgs, roi):
@@ -581,19 +572,27 @@ class BrainMask(BaseEstimator):
                     return self.masker.inverse_transform(single_roi)
 
                 else:
-                    logger.error("Currently there are no other methods than 'vec', 'mean', and 'box' supported!")
+                    msg = "Currently there are no other methods than 'vec', 'mean', 'img' and 'box' supported!"
+                    logger.error(msg)
+                    raise NameError(msg)
             else:
                 if isinstance(X, str):
-                    logger.error("Extracting ROI failed for " + X)
+                    msg = "Extracting ROI failed for " + X
                 elif isinstance(X, list) and isinstance(X[0], str):
-                    logger.error("Extracting ROI failed for item in" + str(X))
+                    msg = "Extracting ROI failed for item in" + str(X)
                 else:
-                    logger.error("Extracting ROI failed for nifti image obj. Cannot trace back path of failed file.")
+                    msg = "Extracting ROI failed for nifti image obj. Cannot trace back path of failed file."
+                logger.error(msg)
+                raise ValueError(msg)
         else:
-            logger.error("Skipping self.mask_image " + self.mask_image.label + " because it is empty.")
+            msg = "Skipping self.mask_image " + self.mask_image.label + " because it is empty."
+            logger.error(msg)
+            raise ValueError(msg)
 
     def inverse_transform(self, X, y=None, **kwargs):
         if not self.extract_mode == 'vec':
-            raise NotImplementedError("BrainMask extract_mode={} is not supported with inverse_transform".format(self.extract_mode))
+            msg = "BrainMask extract_mode={} is not supported with inverse_transform".format(self.extract_mode)
+            logger.error(msg)
+            raise NotImplementedError(msg)
 
         return self.masker.inverse_transform(X)

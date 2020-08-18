@@ -2,6 +2,7 @@ import os
 import numpy as np
 from nilearn import image
 import random
+import warnings
 
 from photonai.base import PipelineElement
 
@@ -14,11 +15,11 @@ class BrainAtlasTests(NeuroBaseTest):
     def test_brain_atlas_mean(self):
 
         brain_atlas = BrainAtlas(self.atlas_name, "vec", rois=self.roi_list)
-        X_star = brain_atlas.transform(self.X)
+        brain_atlas.transform(self.X)
         self.assertTrue(len(self.X), len(brain_atlas.rois))
 
         brain_atlas_mean = BrainAtlas(self.atlas_name, "mean", rois='all')
-        X_star = brain_atlas_mean.transform(self.X)
+        brain_atlas_mean.transform(self.X)
         # Todo: how to compare?
         debug = True
 
@@ -71,3 +72,27 @@ class BrainAtlasTests(NeuroBaseTest):
             atlas.transform(self.X[:2])
             self.assertListEqual(list(atlas.roi_allocation.keys()),
                                  ["Hippocampus_L", "Hippocampus_R", "Amygdala_L", "Amygdala_R"])
+
+    def test_different_inputs(self):
+        custom_atlas = os.path.join(self.atlas_folder, 'AAL_SPM12/AAL.nii.gz')
+
+        for x in [self.X[:2], self.X[0], image.load_img(self.X[0])]:
+            atlas = PipelineElement('BrainAtlas', atlas_name=custom_atlas, extract_mode='vec', batch_size=20)
+            self.assertIsInstance(atlas.transform(x)[0], np.ndarray)
+
+        with self.assertRaises(ValueError):
+            atlas = PipelineElement('BrainAtlas', atlas_name=custom_atlas, extract_mode='vec', batch_size=20)
+            atlas.transform(X=5)
+
+    def test_false_collection_mode(self):
+        custom_atlas = os.path.join(self.atlas_folder, 'AAL_SPM12/AAL.nii.gz')
+        with self.assertRaises(ValueError):
+            atlas = PipelineElement('BrainAtlas', atlas_name=custom_atlas, extract_mode='vec', batch_size=20)
+            atlas.base_element.collection_mode = "array"
+            atlas.transform(self.X)
+
+    def test_list_rois(self):
+        self.assertTrue(AtlasLibrary().list_rois("Schaefer2018_100Parcels_7Networks"))
+        with warnings.catch_warnings(record=True) as w:
+            AtlasLibrary().list_rois("plAtlas")
+            assert len(w) == 1

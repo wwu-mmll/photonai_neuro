@@ -2,6 +2,47 @@ from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
 from typing import Union
 
+from nilearn import image
+from nibabel.nifti1 import Nifti1Image
+
+from photonai.photonlogger.logger import logger
+
+
+class NiftiConverter:
+    """
+    Handle transformation for different inputs to homogeneous output.
+    Output is a Nifti1Image object.
+    """
+
+    @classmethod
+    def transform(cls, X):
+        n_subjects = 1
+        load_data = None
+        msg = None
+        # load all niftis to memory
+        if isinstance(X, list) or isinstance(X, np.ndarray):
+            n_subjects = len(X)
+            if all([isinstance(x, str) for x in X]):
+                load_data = image.load_img(X)
+            elif all([isinstance(x, np.ndarray) for x in X]):
+                n_subjects = X.shape[0]
+                load_data = image.load_img(X)
+            elif all([isinstance(x, Nifti1Image) for x in X]):
+                load_data = image.load_img(X)
+            else:
+                msg = "Cannot interpret the types in the given input_data list."
+        elif isinstance(X, str):
+            load_data = image.load_img(X)
+        elif isinstance(X, Nifti1Image):
+            load_data = X
+        else:
+            msg = "Can only process strings as file paths to nifti images or nifti image object"
+        if msg:
+            logger.error(msg)
+            raise ValueError(msg)
+
+        return load_data, n_subjects
+
 
 class RoiObject:
 
@@ -75,4 +116,3 @@ class AtlasObject:
         self.shape = shape
 
         self.rois_available = []
-

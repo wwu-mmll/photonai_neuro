@@ -60,7 +60,7 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
         copy_of_me.nr_of_processes = 1
         copy_of_me.output_img = True
         for p_element in copy_of_me.elements:
-            if isinstance(p_element.base_element, BrainAtlas):
+            if hasattr(p_element, 'base_element') and isinstance(p_element.base_element, BrainAtlas):
                 p_element.base_element.extract_mode = 'list'
 
         filename = self.name + "_testcase_"
@@ -82,7 +82,9 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
 
         # check if we have a list of niftis, should avoid this, except when output_image = True
         if not self.output_img:
-            if ((isinstance(X_new, list) and len(X_new) > 0) or (isinstance(X_new, np.ndarray) and len(X_new.shape) == 1)) and isinstance(X_new[0], Nifti1Image):
+            if ((isinstance(X_new, list) and len(X_new) > 0)
+                or (isinstance(X_new, np.ndarray) and len(X_new.shape) == 1)) \
+                    and isinstance(X_new[0], Nifti1Image):
                 X_new = np.asarray([i.dataobj for i in X_new])
         return X_new, y, kwargs
 

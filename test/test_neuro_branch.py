@@ -4,7 +4,7 @@ import numpy as np
 from nibabel.nifti1 import Nifti1Image
 from nilearn import image
 
-from photonai.base import PipelineElement
+from photonai.base import PipelineElement, CallbackElement
 from photonai.base.photon_pipeline import CacheManager
 
 from photonai_neuro import NeuroBranch
@@ -164,3 +164,21 @@ class NeuroBranchTests(NeuroBaseTest):
         with self.assertRaises(ValueError):
             nb += PipelineElement('SVC')
 
+    def test_callback(self):
+        self.a = None
+        def my_monitor(X, y=None, **kwargs):
+            self.a = X
+
+        nb = NeuroBranch('neuro_branch')
+        nb += PipelineElement('SmoothImages', fwhm=10)
+        nb += PipelineElement('ResampleImages', voxel_size=5)
+        nb += CallbackElement("monitor", my_monitor)
+
+        nb.base_element.cache_folder = self.cache_folder_path
+        CacheManager.clear_cache_files(nb.base_element.cache_folder, True)
+        # set the config so that caching works
+        nb.set_params(**{'SmoothImages__fwhm': 10, 'ResampleImages__voxel_size': 5})
+
+        nb.transform(self.X[:1])
+
+        self.assertIsInstance(self.a[0], Nifti1Image)
