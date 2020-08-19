@@ -1,5 +1,4 @@
 import warnings
-
 import numpy as np
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import ShuffleSplit
@@ -11,7 +10,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 # GET DATA FROM OASIS
-n_subjects = 10
+n_subjects = 50
 dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
 age = dataset_files.ext_vars['age'].astype(float)
 y = np.array(age)

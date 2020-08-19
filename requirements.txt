@@ -1,4 +1,8 @@
-photonai
+matplotlib
 nibabel
 nilearn
+numpy
+pandas
+photonai
+scikit-learn
 scikit-image

@@ -2,7 +2,6 @@ import json
 import os
 from glob import glob
 from typing import Union
-import warnings
 
 import joblib
 import matplotlib.pylab as plt
@@ -10,8 +9,7 @@ import numpy as np
 import pandas as pd
 from nilearn import datasets, surface, plotting
 
-from photonai.base import PipelineElement
-from photonai.base.hyperpipe import Hyperpipe
+from photonai.base import PipelineElement, Hyperpipe
 from photonai.photonlogger.logger import logger
 from photonai.processing import ResultsHandler
 

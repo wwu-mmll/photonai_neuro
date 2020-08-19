@@ -61,7 +61,7 @@ class SmoothImagesTests(NeuroBaseTest):
 
         with warnings.catch_warnings(record=True) as w:
             PipelineElement('SmoothImages', hyperparameters={}, fwhm=None)
-            assert len(w) == 1
+            assert len(w) > 0
 
         with self.assertRaises(ValueError):
             PipelineElement('SmoothImages', hyperparameters={}, fwhm="quick")

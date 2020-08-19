@@ -3,10 +3,9 @@ from typing import Union, List
 import warnings
 
 from sklearn.base import BaseEstimator
-from nilearn.image import resample_img, smooth_img, index_img
+from nilearn.image import resample_img, smooth_img, index_img, load_img
 from nibabel.nifti1 import Nifti1Image
 from skimage.util.shape import view_as_windows
-from nilearn import image
 
 from photonai.photonlogger.logger import logger
 
@@ -182,7 +181,7 @@ class PatchImages(BaseEstimator, NeuroTransformerMixin):
     def draw_patches(patch_x, patch_size):
 
         if isinstance(patch_x, str):
-            patch_x = np.ascontiguousarray(image.load_img(patch_x).get_data())
+            patch_x = np.ascontiguousarray(load_img(patch_x).get_data())
         elif isinstance(patch_x, Nifti1Image):
             patch_x = np.ascontiguousarray(patch_x.dataobj)
         elif isinstance(patch_x, np.ndarray):
@@ -197,7 +196,7 @@ class PatchImages(BaseEstimator, NeuroTransformerMixin):
 
         if isinstance(patch_x, list):
             if all([isinstance(px, str) for px in patch_x]):
-                patch_x = [np.ascontiguousarray(image.load_img(px).get_data()) for px in patch_x]
+                patch_x = [np.ascontiguousarray(load_img(px).get_data()) for px in patch_x]
             return_list = []
             for p in patch_x:
 

@@ -128,6 +128,11 @@ class NeuroBranchTests(NeuroBaseTest):
         self.assertTrue(os.path.exists("./neuro_branch_testcase_0_transformed.nii"))
         os.remove("./neuro_branch_testcase_0_transformed.nii")
 
+        with self.assertRaises(ValueError):
+            nb += PipelineElement('BrainAtlas', rois=['Hippocampus_L', 'Hippocampus_R'],
+                               atlas_name="AAL", extract_mode='vec')
+            nb.test_transform(self.X)
+
     def test_test_transform_multi(self):
         nb = NeuroBranch('neuro_branch')
         nb += PipelineElement('SmoothImages', fwhm=10)

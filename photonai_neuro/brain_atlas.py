@@ -1,11 +1,3 @@
-"""
-Questions:
-Wenn ROIs übergeben werden wirklich nur die nehmen, die passen, keine Schreibfehler raisen?
-
-ToDo:
-inverse mapping data_X.get_fdata()[:,:,:,0] - data_X_2
-"""
-
 import glob
 import inspect
 import time
@@ -18,10 +10,8 @@ import nibabel as nib
 import numpy as np
 import pandas as pd
 from nilearn import image, masking, _utils
-from nilearn._utils.niimg import _safe_get_data
-from nilearn.image import math_img
-from sklearn.base import BaseEstimator
 from nilearn.input_data import NiftiMasker
+from sklearn.base import BaseEstimator
 
 from photonai.photonlogger.logger import logger
 
@@ -214,17 +204,17 @@ class AtlasLibrary:
         mask_object = MaskObject(name=mask_name, mask_file=original_mask_object.mask_file)
 
         #mask_object.mask = image.threshold_img(mask_object.mask_file, threshold=mask_threshold)
-        mask_object.mask = math_img('img > {}'.format(mask_threshold), img=mask_object.mask_file)
+        mask_object.mask = image.math_img('img > {}'.format(mask_threshold), img=mask_object.mask_file)
 
         if target_affine is not None and target_shape is not None:
             mask_object.mask = self._resample(mask_object.mask, target_affine=target_affine, target_shape=target_shape)
 
         # check if roi is empty
         if np.sum(mask_object.mask.dataobj != 0) == 0:
+            mask_object.is_empty = True
             msg = 'No voxels in mask after resampling (' + mask_object.name + ').'
             logger.error(msg)
             raise ValueError(msg)
-            mask_object.is_empty = True
 
         AtlasLibrary.LIBRARY[(mask_object.name, str(target_affine), str(target_shape), str(mask_threshold))] = mask_object
         logger.debug("BrainMask: Done adding mask to library!")
@@ -309,17 +299,18 @@ class AtlasLibrary:
 
 class BrainAtlas(BaseEstimator):
     """
-    BrainAtlas is a transformer calculate brain atlases to input niftis.
+    BrainAtlas is a transformer calculate brain atlases from input niftis.
 
     Parameter
     ---------
     * `atlas_name`: [str]:
-
-    * `extract_mode`: [str]:
-
+        Name of specific Atlas. Possible values can be looked up in AtlasLibrary.
+    * `extract_mode`: [str] - [default: 'vec']:
+        The mode performing on ROI. Possible values: ['vec', 'mean', 'box', 'img']
     * `mask_threshold`: [str]:
-
+        Mask Threshold. value < mask_threshold => value = 0
     * `background_id`: [str]:
+        The background ID for ROI.
 
     # ToDo
         #   + check RAS vs. LPS view-type and provide warning
@@ -333,8 +324,7 @@ class BrainAtlas(BaseEstimator):
                  extract_mode: str = 'vec',
                  mask_threshold: float = None,
                  background_id: int = 0,
-                 rois: Union[list, str] = 'all',
-                 example_data = None):
+                 rois: Union[list, str] = 'all'):
 
 
         self.atlas_name = atlas_name
@@ -352,8 +342,6 @@ class BrainAtlas(BaseEstimator):
         self.needs_y = False
         self.needs_covariates = False
         self.roi_allocation = {}
-        if example_data:
-            _ = self.transform(example_data)
 
     def fit(self, X, y):
         return self
@@ -389,7 +377,7 @@ class BrainAtlas(BaseEstimator):
         t1 = time.time()
 
         # convert to series and C ordering since this will speed up the masking process
-        series = _utils.as_ndarray(_safe_get_data(X), dtype='float32', order="C", copy=True)
+        series = _utils.as_ndarray(_utils.niimg._safe_get_data(X), dtype='float32', order="C", copy=True)
         mask_indices = list()
 
         # calculate roi_data for every ROI object by looping

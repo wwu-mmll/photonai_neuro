@@ -4,9 +4,9 @@ import numpy as np
 from nibabel.nifti1 import Nifti1Image
 
 from photonai.base import ParallelBranch, CallbackElement, PhotonRegistry
-from photonai_neuro.brain_atlas import BrainAtlas
 from photonai.photonlogger.logger import logger
 
+from photonai_neuro.brain_atlas import BrainAtlas
 from photonai_neuro.nifti_transformations import NeuroTransformerMixin
 
 
@@ -69,7 +69,8 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
 
         for i, new_pic in enumerate(new_pics):
             if not isinstance(new_pic, Nifti1Image):
-                msg = "Last element of NeuroBranch does not return a nifti image."
+                msg = "The test_transform function in NeuroBranch is only build for nifti file output." + \
+                      str(self.elements[-1]) + " does not return a nifti image."
                 logger.error(msg)
                 raise ValueError(msg)
 

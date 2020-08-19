@@ -1,6 +1,4 @@
-from sklearn.base import BaseEstimator, TransformerMixin
 import numpy as np
-from typing import Union
 
 from nilearn import image
 from nibabel.nifti1 import Nifti1Image
@@ -58,35 +56,6 @@ class NeuroTransformerMixin:
 
     def __init__(self, output_img: bool = False):
         self.output_img = output_img
-
-
-class RoiFilter(BaseEstimator, TransformerMixin):
-
-    def __init__(self, roi_allocation: dict, mask_indices: Union[np.ndarray, list], rois = []):
-        self.roi_allocation = roi_allocation
-        self.mask_indices = mask_indices
-        self._rois = None
-        self.rois = rois
-
-    @property
-    def rois(self):
-        return self._rois
-
-    @rois.setter
-    def rois(self, value):
-        if isinstance(value, str):
-            self._rois = [value]
-        else:
-            self._rois = value
-        self.rois_indices = [self.roi_allocation[roi] for roi in self.rois]
-        self.filter_indices = np.array([True if x in self.rois_indices else False for x in self.mask_indices])
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X, y=None, **kwargs):
-        return_data = X[:, self.filter_indices]
-        return return_data
 
 
 class MaskObject:

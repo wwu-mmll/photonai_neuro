@@ -1,9 +1,9 @@
+import os
 import warnings
-
 import numpy as np
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import KFold
-import os
+
 from photonai.base import Hyperpipe, PipelineElement, OutputSettings
 from photonai_neuro import NeuroBranch
 from photonai.optimization import Categorical

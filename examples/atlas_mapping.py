@@ -1,5 +1,4 @@
 import warnings
-
 import numpy as np
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import KFold
@@ -15,7 +14,7 @@ results_folder = './tmp/'
 cache_folder = './tmp/cache'
 
 # GET DATA FROM OASIS
-n_subjects = 20
+n_subjects = 50
 dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
 age = dataset_files.ext_vars['age'].astype(float)
 gender = dataset_files.ext_vars['mf'].astype(str)
