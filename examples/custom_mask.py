@@ -1,5 +1,4 @@
 import warnings
-
 import numpy as np
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import ShuffleSplit
@@ -30,7 +29,7 @@ pipe = Hyperpipe('CustomMask',
                  eval_final_performance=False,
                  output_settings=OutputSettings(project_folder='./tmp/'))
 
-local_spm_installation = '/spm-data/it-share/software_metis/SPMLauncher/ManagedSoftware/spm/'
+local_spm_installation = ''
 custom_mask = local_spm_installation + 'spm12/toolbox/Anatomy/PMaps/Insula_Ig1.nii'
 mask = PipelineElement('BrainMask', mask_image=custom_mask, extract_mode='vec', batch_size=20)
 

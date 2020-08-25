@@ -1,24 +1,41 @@
 import numpy as np
+from typing import Union, List
+import warnings
 
 from sklearn.base import BaseEstimator
-from nilearn.image import resample_img, smooth_img, index_img
+from nilearn.image import resample_img, smooth_img, index_img, load_img
 from nibabel.nifti1 import Nifti1Image
+from skimage.util.shape import view_as_windows
 
 from photonai.photonlogger.logger import logger
 
-class NeuroTransformerMixin:
-
-    def __init__(self):
-        self.output_img = False
+from photonai_neuro.objects import NeuroTransformerMixin
 
 
-# Smoothing
 class SmoothImages(BaseEstimator, NeuroTransformerMixin):
-    def __init__(self, fwhm=[2, 2, 2]):
+    """
+    PipelineElemente to perform nilearns smooth_img function.
 
-        super(SmoothImages, self).__init__()
+    Parameter
+    ---------
+    * `fwhm`: Union[int, list, str] - [default: 2]
+        Smoothing strength, as a Full-Width at Half Maximum, in millimeters.
+        If a scalar is given, width is identical on all three directions.
+        A numpy.ndarray must have 3 elements, giving the FWHM along each axis.
+        If fwhm == ‘fast’, a fast smoothing will be performed with a filter [0.2, 1, 0.2]
+        in each direction and a normalisation to preserve the scale.
+        If fwhm is None, no filtering is performed (useful when just removal of non-finite values is needed).
+        * cited from nilearn: https://nilearn.github.io/modules/generated/nilearn.image.smooth_img.html
 
-        # initialize private variable and
+    * `output_img`: bool - [default: False]
+        Indicates the output format. False -> array,  True -> object (Nifti1Image).
+
+    """
+
+    def __init__(self, fwhm: Union[int, List, str] = 2, output_img: bool = False):
+
+        super(SmoothImages, self).__init__(output_img=output_img)
+
         self._fwhm = None
         self.fwhm = fwhm
 
@@ -31,13 +48,22 @@ class SmoothImages(BaseEstimator, NeuroTransformerMixin):
 
     @fwhm.setter
     def fwhm(self, fwhm):
-        if isinstance(fwhm, int):
+        if isinstance(fwhm, int):  # allowing int to improve optimization
             self._fwhm = [fwhm, fwhm, fwhm]
-        elif isinstance(fwhm, list):
-            if len(fwhm) != 3:
-                raise Exception("fwhm parameter should be either an integer (3) or a in the form of [3, 3, 3]")
-            else:
-                self._fwhm = fwhm
+        elif isinstance(fwhm, list) and len(fwhm) == 3 and all(isinstance(x, int) for x in fwhm):
+            self._fwhm = fwhm
+        elif fwhm == 'fast':
+            self._fwhm = fwhm
+        elif fwhm is None:
+            self._fwhm = None
+            warn_msg = "the fwhm in SmoothImages is None, no filtering is performed (useful when just " \
+                       "removal of non-finite values is needed). "
+            logger.warning(warn_msg)
+            warnings.warn(warn_msg)
+        else:
+            msg = "SmoothImages expected fwhm as int, as str=='fast' or a list of three ints like [3, 3, 3]."
+            logger.error(msg)
+            raise ValueError(msg)
 
     def transform(self, X, y=None, **kwargs):
 
@@ -58,12 +84,30 @@ class SmoothImages(BaseEstimator, NeuroTransformerMixin):
 
 class ResampleImages(BaseEstimator, NeuroTransformerMixin):
     """
-     Resampling voxel size
+     Resampling voxel size based on nilearns resample_img function.
+     This object creates the target_affine = np.diag(voxel_size) as 3x3 matrix.
+
+    Parameter
+    ---------
+    * `voxel_size`: Union[int, List] - [default: 3]
+        Value to create target_affine matrix for resmapled_img function.
+    * `interpolation`: str - [default: 'nearest']
+        Set the resample method.
+    * `output_img`: bool - [default: False]
+        Indicates the output format. False -> array,  True -> object (Nifti1Image).
+
     """
-    def __init__(self, voxel_size=[3, 3, 3]):
-        super(ResampleImages, self).__init__()
+    def __init__(self, voxel_size: Union[int, List] = 3, interpolation: str = 'nearest', output_img: bool = False):
+        super(ResampleImages, self).__init__(output_img=output_img)
         self._voxel_size = None
         self.voxel_size = voxel_size
+
+        if interpolation in ['continuous', 'linear', 'nearest']:
+            self.interpolation = interpolation
+        else:
+            msg = "Got unexpected interpolation. Please use one of ['continuous', 'linear' 'nearest']"
+            logger.error(msg)
+            raise NameError(msg)
 
     def fit(self, X, y=None, **kwargs):
         return self
@@ -76,21 +120,22 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
     def voxel_size(self, voxel_size):
         if isinstance(voxel_size, int):
             self._voxel_size = [voxel_size, voxel_size, voxel_size]
-        elif isinstance(voxel_size, list):
-            if len(voxel_size) != 3:
-                raise Exception("voxel_size parameter should be either an integer (3) or a in the form of [3, 3, 3]")
-            else:
-                self._voxel_size = voxel_size
+        elif isinstance(voxel_size, list) and len(voxel_size) == 3 and all(isinstance(x, int) for x in voxel_size):
+            self._voxel_size = voxel_size
+        else:
+            msg = "ResampleImages expected voxel_size as int or a list of three ints like [3, 3, 3]."
+            logger.error(msg)
+            raise ValueError(msg)
 
     def transform(self, X, y=None, **kwargs):
         target_affine = np.diag(self.voxel_size)
 
         if isinstance(X, list) and len(X) == 1:
-            resampled_img = resample_img(X[0], target_affine=target_affine, interpolation='nearest')
+            resampled_img = resample_img(X[0], target_affine=target_affine, interpolation=self.interpolation)
         elif isinstance(X, str):
-            resampled_img = resample_img(X, target_affine=target_affine, interpolation='nearest')
+            resampled_img = resample_img(X, target_affine=target_affine, interpolation=self.interpolation)
         else:
-            resampled_img = resample_img(X, target_affine=target_affine, interpolation='nearest')
+            resampled_img = resample_img(X, target_affine=target_affine, interpolation=self.interpolation)
 
         if self.output_img:
             if len(resampled_img.shape) == 3:
@@ -109,15 +154,21 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
         return resampled_img
 
 
-class PatchImages(BaseEstimator):
+class PatchImages(BaseEstimator, NeuroTransformerMixin):
+    """
+    ToDo: Check correct input /output!
+    """
 
-    def __init__(self, patch_size=25, random_state=42, nr_of_processes=3):
-        logger.info("Nr or processes: " + str(nr_of_processes))
-        super(PatchImages, self).__init__(output_img=True, nr_of_processes=nr_of_processes)
+    def __init__(self, patch_size=25, nr_of_processes=1):
+        super(PatchImages, self).__init__(output_img=True)
         # Todo: give cache folder to mother class
 
+        self.nr_of_processes = nr_of_processes
         self.patch_size = patch_size
-        self.random_state = random_state
+
+        msg = "Use PatchImages wisely: not tested in content."
+        logger.warning(msg)
+        warnings.warn(msg)
 
     def fit(self, X, y=None, **kwargs):
         return self
@@ -126,30 +177,37 @@ class PatchImages(BaseEstimator):
         logger.info("Drawing patches")
         return self.draw_patches(X, self.patch_size)
 
-
     @staticmethod
     def draw_patches(patch_x, patch_size):
-        if not isinstance(patch_x, list):
-            return PatchImages.draw_patch_from_mri(patch_x, patch_size)
+
+        if isinstance(patch_x, str):
+            patch_x = np.ascontiguousarray(load_img(patch_x).get_data())
+        elif isinstance(patch_x, Nifti1Image):
+            patch_x = np.ascontiguousarray(patch_x.dataobj)
+        elif isinstance(patch_x, np.ndarray):
+            if len(patch_x.shape) == 1:
+                patch_x = list(patch_x)
+        elif isinstance(patch_x, list):
+            pass
         else:
+            msg = "Could not read input data."
+            logger.error(msg)
+            raise ValueError(msg)
+
+        if isinstance(patch_x, list):
+            if all([isinstance(px, str) for px in patch_x]):
+                patch_x = [np.ascontiguousarray(load_img(px).get_data()) for px in patch_x]
             return_list = []
             for p in patch_x:
-                print(str(p))
+
                 return_list.append(PatchImages.draw_patch_from_mri(p, patch_size))
             return return_list
 
+        return PatchImages.draw_patch_from_mri(patch_x, patch_size)
+
     @staticmethod
-    def draw_patch_from_mri(patch_x, patch_size):
-        # logger.info("drawing patch..")
-        if isinstance(patch_x, str):
-            from nilearn import image
-            patch_x = np.ascontiguousarray(image.load_img(patch_x).get_data())
+    def draw_patch_from_mri(patch_x: np.ndarray, patch_size):
 
-        if isinstance(patch_x, Nifti1Image):
-            patch_x = np.ascontiguousarray(patch_x.dataobj)
-
-        # Todo: import is failing; why?
-        from skimage.util.shape import view_as_windows
         patches_drawn = view_as_windows(patch_x, (patch_size, patch_size, 1), step=1)
 
         patch_list_length = patches_drawn.shape[0]
@@ -164,7 +222,7 @@ class PatchImages(BaseEstimator):
         return output_matrix
 
     def copy_me(self):
-        return PatchImages(self.patch_size, self.random_state, self.nr_of_processes)
+        return PatchImages(self.patch_size, self.nr_of_processes)
 
     def _draw_single_patch(self):
-        pass
+        raise NotImplementedError("Not implemented yet.")

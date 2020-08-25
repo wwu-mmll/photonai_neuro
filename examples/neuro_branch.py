@@ -1,6 +1,5 @@
 import time
 import warnings
-
 import numpy as np
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import ShuffleSplit

@@ -1,10 +1,10 @@
 {
-   "ResampleImages":[
-      "photonai_neuro.nifti_transformations.ResampleImages",
-      "Transformer"
-   ],
    "SmoothImages":[
       "photonai_neuro.nifti_transformations.SmoothImages",
+      "Transformer"
+   ],
+   "ResampleImages":[
+      "photonai_neuro.nifti_transformations.ResampleImages",
       "Transformer"
    ],
    "BrainAtlas":[
