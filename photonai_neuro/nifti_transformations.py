@@ -69,8 +69,6 @@ class SmoothImages(BaseEstimator, NeuroTransformerMixin):
 
         if isinstance(X, list) and len(X) == 1:
             smoothed_img = smooth_img(X[0], fwhm=self.fwhm)
-        elif isinstance(X, str):
-            smoothed_img = smooth_img(X, fwhm=self.fwhm)
         else:
             smoothed_img = smooth_img(X, fwhm=self.fwhm)
 
@@ -101,16 +99,25 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
         super(ResampleImages, self).__init__(output_img=output_img)
         self._voxel_size = None
         self.voxel_size = voxel_size
+        self._interpolation = None
+        self.interpolation = interpolation
 
-        if interpolation in ['continuous', 'linear', 'nearest']:
-            self.interpolation = interpolation
+
+    def fit(self, X, y=None, **kwargs):
+        return self
+
+    @property
+    def interpolation(self):
+        return self._interpolation
+
+    @interpolation.setter
+    def interpolation(self, value):
+        if value in ['continuous', 'linear', 'nearest']:
+            self._interpolation = value
         else:
             msg = "Got unexpected interpolation. Please use one of ['continuous', 'linear' 'nearest']"
             logger.error(msg)
             raise NameError(msg)
-
-    def fit(self, X, y=None, **kwargs):
-        return self
 
     @property
     def voxel_size(self):
@@ -132,8 +139,6 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
 
         if isinstance(X, list) and len(X) == 1:
             resampled_img = resample_img(X[0], target_affine=target_affine, interpolation=self.interpolation)
-        elif isinstance(X, str):
-            resampled_img = resample_img(X, target_affine=target_affine, interpolation=self.interpolation)
         else:
             resampled_img = resample_img(X, target_affine=target_affine, interpolation=self.interpolation)
 

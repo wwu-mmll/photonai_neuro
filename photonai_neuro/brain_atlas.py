@@ -422,6 +422,8 @@ class BrainAtlas(BaseEstimator):
         mask_img = image.new_img_like(mask_img, mask, mask_affine)
         mask_data = _utils.as_ndarray(mask_img.get_fdata(),
                                       dtype=np.bool)
+
+        # Todo: consider extraction mode!
         return series[mask_data].T
 
     def inverse_transform(self, X, y=None, **kwargs):

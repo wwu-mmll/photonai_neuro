@@ -34,6 +34,7 @@ class BrainMaskTests(NeuroBaseTest):
             self.assertIsInstance(result, tuple)
             if not em == 'img':
                 self.assertIsInstance(result[0], np.ndarray)
+            # todo: check vec, mean and box for shapes
             else:
                 self.assertIsInstance(result[0], Nifti1Image)
 
@@ -71,3 +72,4 @@ class BrainMaskTests(NeuroBaseTest):
         result = mask.transform(self.X[0:1])
         back_transformed = mask.inverse_transform(result[0])[0]
         self.assertIsInstance(back_transformed, Nifti1Image)
+        # todo: check shape: that it is equal to mask?

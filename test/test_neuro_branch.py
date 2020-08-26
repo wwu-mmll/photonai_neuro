@@ -161,6 +161,7 @@ class NeuroBranchTests(NeuroBaseTest):
         # set the config so that caching works
         nb.set_params(**{'SmoothImages__fwhm': 10, 'ResampleImages__voxel_size': 5})
 
+        # todo: why does that fail?
         with self.assertRaises(ValueError):
             nb.test_transform(self.X)
 

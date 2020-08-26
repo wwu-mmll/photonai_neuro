@@ -8,11 +8,12 @@ from photonai.base import Hyperpipe, PipelineElement, OutputSettings, Preprocess
 from photonai_neuro import AtlasMapper, NeuroBranch
 from test.test_neuro import NeuroBaseTest
 
+
 class AtlasMapperTests(NeuroBaseTest):
 
     def create_hyperpipe(self):
-        results_folder = './tmp/'
-        cache_folder = './tmp/cache'
+        results_folder = self.tmp_folder_path
+        cache_folder = self.cache_folder_path
         settings = OutputSettings(project_folder=results_folder)
 
         my_pipe = Hyperpipe('atlas_mapper_example',
@@ -81,7 +82,7 @@ class AtlasMapperTests(NeuroBaseTest):
         self.assertTrue(os.path.exists(results_folder+"importance_scores_surface.png"))
 
     def test_fit_concat(self):
-        results_folder = './tmp/'
+        results_folder = self.tmp_folder_path
         X, y = self.create_data()
         brain_atlas = PipelineElement('BrainAtlas', atlas_name="Yeo_7", extract_mode='vec',
                                       rois='all', batch_size=200)

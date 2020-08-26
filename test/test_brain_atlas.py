@@ -15,13 +15,15 @@ class BrainAtlasTests(NeuroBaseTest):
     def test_brain_atlas_mean(self):
 
         brain_atlas = BrainAtlas(self.atlas_name, "vec", rois=self.roi_list)
-        brain_atlas.transform(self.X)
-        self.assertTrue(len(self.X), len(brain_atlas.rois))
+        vec_output = brain_atlas.transform(self.X)
+        self.assertEqual(len(self.X), vec_output.shape[0])
+        self.assertEqual(vec_output.shape[1], brain_atlas.mask_indices.shape[0])
 
         brain_atlas_mean = BrainAtlas(self.atlas_name, "mean", rois='all')
-        brain_atlas_mean.transform(self.X)
-        # Todo: how to compare?
-        debug = True
+        mean_rois = brain_atlas_mean.transform(self.X)
+        self.assertEqual(mean_rois.shape[0], len(self.X))
+        # todo: should be 109 because of mean, but is the same as vec.
+        self.assertEqual(mean_rois.shape[1], brain_atlas_mean.shape[1])
 
     def test_brain_atlas_load(self):
 
@@ -34,6 +36,7 @@ class BrainAtlasTests(NeuroBaseTest):
     def test_custom_atlas(self):
         custom_atlas = os.path.join(self.atlas_folder, 'AAL_SPM12/AAL.nii.gz')
 
+        # todo: consider renaming atlas_name to only atlas as we are giving a full path here which might be confusing?
         atlas = PipelineElement('BrainAtlas', atlas_name=custom_atlas, extract_mode='vec', batch_size=20)
         _ = atlas.transform(self.X)
 
@@ -58,6 +61,7 @@ class BrainAtlasTests(NeuroBaseTest):
 
             "-".join(rois)
             name = os.path.join(self.test_folder, atlas + '_' + "-".join(rois))
+            # todo: what good does that do?
             brain_atlas._validity_check_roi_extraction(X_t[0], filename=name)
             self.assertTrue(os.path.exists(name+".nii"))
             os.remove(name+".nii")
@@ -70,6 +74,7 @@ class BrainAtlasTests(NeuroBaseTest):
                                extract_mode='vec',
                                rois=roi_list_rand_order)
             atlas.transform(self.X[:2])
+            # todo: why is that reordered?
             self.assertListEqual(list(atlas.roi_allocation.keys()),
                                  ["Hippocampus_L", "Hippocampus_R", "Amygdala_L", "Amygdala_R"])
 
