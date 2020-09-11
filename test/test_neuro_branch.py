@@ -8,6 +8,7 @@ from photonai.base import PipelineElement, CallbackElement
 from photonai.base.photon_pipeline import CacheManager
 
 from photonai_neuro import NeuroBranch
+from photonai_neuro.objects import NiftiConverter
 from test.test_neuro import NeuroBaseTest
 
 
@@ -161,7 +162,7 @@ class NeuroBranchTests(NeuroBaseTest):
         # set the config so that caching works
         nb.set_params(**{'SmoothImages__fwhm': 10, 'ResampleImages__voxel_size': 5})
 
-        # todo: why does that fail?
+        # last element is not returning in nii-format
         with self.assertRaises(ValueError):
             nb.test_transform(self.X)
 
@@ -188,3 +189,25 @@ class NeuroBranchTests(NeuroBaseTest):
         nb.transform(self.X[:1])
 
         self.assertIsInstance(self.a[0], Nifti1Image)
+
+    def test_invariance(self):
+        nb1 = NeuroBranch('neuro_branch', nr_of_processes=4, output_img=True)
+        nb1 += PipelineElement('ResampleImages', voxel_size=5, batch_size=1, interpolation='nearest')
+        pai_result1, _, _ = nb1.transform(self.X)
+
+        nb2 = NeuroBranch('neuro_branch', nr_of_processes=4, output_img=False)
+        nb2 += PipelineElement('ResampleImages', voxel_size=5, batch_size=2, interpolation='nearest')
+        pai_result2, _, _ = nb2.transform(self.X)
+        #pai_result2 = np.moveaxis(pai_result2, -1, 0)
+
+        #rawX = NiftiConverter.transform(self.X)
+        nilearn_result = image.resample_img(self.X,
+                                            target_affine=np.diag([5, 5, 5]),
+                                            interpolation='nearest')
+        nilearn_result = [image.index_img(nilearn_result, i) for i in range(nilearn_result.shape[-1])]
+
+        for i in range(len(self.X)):
+            np.testing.assert_equal(nilearn_result[i].dataobj, pai_result2[i, :, :, :])
+            np.testing.assert_equal(nilearn_result[i].dataobj, pai_result1[i].dataobj)
+        print("test")
+

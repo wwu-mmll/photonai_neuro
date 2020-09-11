@@ -8,6 +8,7 @@ from photonai.base import PipelineElement
 from photonai_neuro.nifti_transformations import PatchImages
 from photonai_neuro import NeuroBranch
 from test.test_neuro import NeuroBaseTest
+from photonai_neuro.objects import NiftiConverter
 
 
 class SmoothImagesTests(NeuroBaseTest):
@@ -117,10 +118,10 @@ class ResampleImagesTests(NeuroBaseTest):
 
     def test_interpolation(self):
         for i in ['continuous', 'linear', 'nearest']:
-            resampler = PipelineElement('ResampleImages', hyperparameters={}, interpolation=i, output_img=False)
+            resampler = PipelineElement('ResampleImages', voxel_size=3, interpolation=i, output_img=False)
             resampled_img, _, _ = resampler.transform(self.X[0])
             np.testing.assert_array_equal(resampled_img, resample_img(self.X[0],
-                                                                      target_affine=np.diag([3,3,3]),
+                                                                      target_affine=np.diag([3, 3, 3]),
                                                                       interpolation=i).dataobj)
 
         with self.assertRaises(NameError):
@@ -130,6 +131,13 @@ class ResampleImagesTests(NeuroBaseTest):
         with self.assertRaises(ValueError):
             PipelineElement('ResampleImages', hyperparameters={}, voxel_size=[4,4,4,42])
 
+    def test_identity(self):
+        img = NiftiConverter.transform(self.X[0])
+        resampler = PipelineElement('ResampleImages',
+                                    voxel_size=list(img[0].affine.diagonal().astype(int)[:-1]),
+                                    output_img=True)
+        resample_img = resampler.transform(self.X[0])[0][0]
+        np.testing.assert_equal(img[0].dataobj, resample_img.dataobj)
 
 class PatchImagesTests(NeuroBaseTest):
 

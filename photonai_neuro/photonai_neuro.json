@@ -12,7 +12,7 @@
       "Transformer"
    ],
    "BrainMask":[
-      "photonai_neuro.brain_atlas.BrainMask",
+      "photonai_neuro.brain_mask.BrainMask",
       "Transformer"
    ],
    "PatchImages":[

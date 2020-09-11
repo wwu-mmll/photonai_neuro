@@ -1,5 +1,6 @@
 # Photon specific stuff
 configuration.ini
+registered
 
 **/tmp
 **/cache

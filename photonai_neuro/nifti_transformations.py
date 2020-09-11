@@ -95,7 +95,7 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
         Indicates the output format. False -> array,  True -> object (Nifti1Image).
 
     """
-    def __init__(self, voxel_size: Union[int, List] = 3, interpolation: str = 'nearest', output_img: bool = False):
+    def __init__(self, voxel_size: Union[int, List] = 3, interpolation: str = 'continuous', output_img: bool = False):
         super(ResampleImages, self).__init__(output_img=output_img)
         self._voxel_size = None
         self.voxel_size = voxel_size
@@ -127,7 +127,8 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
     def voxel_size(self, voxel_size):
         if isinstance(voxel_size, int):
             self._voxel_size = [voxel_size, voxel_size, voxel_size]
-        elif isinstance(voxel_size, list) and len(voxel_size) == 3 and all(isinstance(x, int) for x in voxel_size):
+        elif isinstance(voxel_size, list) and len(voxel_size) == 3 \
+                and all(isinstance(x, (int, np.int, np.int64, np.int32)) for x in voxel_size):
             self._voxel_size = voxel_size
         else:
             msg = "ResampleImages expected voxel_size as int or a list of three ints like [3, 3, 3]."
