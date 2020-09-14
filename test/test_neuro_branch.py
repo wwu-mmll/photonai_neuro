@@ -38,7 +38,7 @@ class NeuroBranchTests(NeuroBaseTest):
 
                 # transform data
                 obj.base_element.cache_folder = self.cache_folder_path
-                CacheManager.clear_cache_files(obj.base_element.cache_folder, True)
+                #CacheManager.clear_cache_files(obj.base_element.cache_folder, True)
                 obj.base_element.current_config = {'test_suite': 1}
                 new_X, _, _ = obj.transform(self.X)
                 obj.base_element.clear_cache()

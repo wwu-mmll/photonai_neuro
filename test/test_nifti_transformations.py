@@ -74,7 +74,7 @@ class ResampleImagesTests(NeuroBaseTest):
         voxel_size = [3, 3, 3]
 
         # nilearn
-        nilearn_resampled_img = resample_img(self.X[0], interpolation='nearest', target_affine = np.diag(voxel_size))
+        nilearn_resampled_img = resample_img(self.X[0], interpolation='continuous', target_affine = np.diag(voxel_size))
         nilearn_resampled_array = nilearn_resampled_img.dataobj
 
         # photon
@@ -96,7 +96,7 @@ class ResampleImagesTests(NeuroBaseTest):
         voxel_size = [3, 3, 3]
 
         # nilearn
-        nilearn_resampled = resample_img(self.X[:3], interpolation='nearest', target_affine = np.diag(voxel_size))
+        nilearn_resampled = resample_img(self.X[:3], interpolation='continuous', target_affine = np.diag(voxel_size))
         nilearn_resampled_img = [index_img(nilearn_resampled, i) for i in range(nilearn_resampled.shape[-1])]
         nilearn_resampled_array = np.moveaxis(nilearn_resampled.dataobj, -1, 0)
 

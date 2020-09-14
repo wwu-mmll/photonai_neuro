@@ -1,9 +1,9 @@
 import time
 from typing import Union
+import time
 
 import numpy as np
 from nilearn import image, masking, _utils
-from nilearn.input_data import NiftiMasker
 from sklearn.base import BaseEstimator
 
 from photonai.photonlogger.logger import logger
@@ -102,38 +102,36 @@ class BrainAtlas(BaseEstimator):
         atlas_obj = AtlasLibrary().get_atlas(self.atlas_name, self.affine, self.shape, self.mask_threshold)
         roi_objects = self._get_rois(atlas_obj, which_rois=self.rois, background_id=self.background_id)
 
-        roi_data = [list() for i in range(n_subjects)]
-        roi_data_concat = list()
+        roi_data = np.array([], dtype=np.int64).reshape(n_subjects, 0) if self.collection_mode == "concat" else [list() for _ in range(n_subjects)]
         t1 = time.time()
 
         # convert to series and C ordering since this will speed up the masking process
         series = _utils.as_ndarray(_utils.niimg._safe_get_data(X), dtype='float32', order="C", copy=True)
-        mask_indices = list()
+        mask_indices = np.array([]) if self.collection_mode == "concat" else list()
 
         # calculate roi_data for every ROI object by looping
+        # ToDo: Performance
         for i, roi in enumerate(roi_objects):
             self.roi_allocation[roi.label] = i
 
             logger.debug("Extracting ROI {}".format(roi.label))
             # simply call apply_mask to extract one roi
             extraction = self.apply_mask(series, roi.mask)
+
+            if self.extract_mode == 'mean':
+                extraction = np.reshape(np.mean(extraction, axis=1), (-1, 1))
+            if n_subjects == 1:
+                extraction = np.reshape(extraction, (1, -1))
+
             if collection_mode == 'list':
                 for sub_i in range(extraction.shape[0]):
                     roi_data[sub_i].append(extraction[sub_i])
                 mask_indices.append(i)
             else:
-                roi_data_concat.append(extraction)
-                mask_indices.append(np.ones(extraction[0].size) * i)
+                roi_data = np.concatenate([roi_data, extraction], axis=1)
+                mask_indices = np.concatenate([mask_indices, np.ones(extraction[0].size) * i])
 
-        if self.collection_mode == 'concat':
-            if n_subjects > 1:
-                roi_data = np.concatenate(roi_data_concat, axis=1)
-                self.mask_indices = np.concatenate(mask_indices)
-            else:
-                roi_data = np.array(roi_data_concat)
-                self.mask_indices = mask_indices
-        else:
-            self.mask_indices = mask_indices
+        self.mask_indices = mask_indices
 
         elapsed_time = time.time() - t1
         logger.debug("Time for extracting {} ROIs in {} subjects: {} seconds".format(len(roi_objects),
@@ -148,13 +146,9 @@ class BrainAtlas(BaseEstimator):
         :return:
         """
         mask_img = _utils.check_niimg_3d(mask_img)
-        mask, mask_affine = masking._load_mask_img(mask_img)
-        mask_img = image.new_img_like(mask_img, mask, mask_affine)
-        mask_data = _utils.as_ndarray(mask_img.get_fdata(),
-                                      dtype=np.bool)
 
         # Todo: consider extraction mode!
-        return series[mask_data].T
+        return series[mask_img.dataobj.astype(bool)].T
 
     def inverse_transform(self, X, y=None, **kwargs):
         """

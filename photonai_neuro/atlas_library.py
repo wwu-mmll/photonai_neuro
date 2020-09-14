@@ -91,7 +91,8 @@ class AtlasLibrary:
             Threshold for defining background.
 
         """
-        if (atlas_name, str(target_affine), str(target_shape), str(mask_threshold)) not in AtlasLibrary.LIBRARY:
+        if (atlas_name, str(target_affine), str(target_shape), str(mask_threshold)) not in \
+                list(AtlasLibrary.LIBRARY.keys()):
             self._add_atlas_to_library(atlas_name, target_affine, target_shape, mask_threshold)
 
         return AtlasLibrary.LIBRARY[(atlas_name, str(target_affine), str(target_shape), str(mask_threshold))]
@@ -146,7 +147,7 @@ class AtlasLibrary:
                               target_affine: Union[np.ndarray, None] = None,
                               target_shape: Union[tuple, list, None] = None,
                               mask_threshold: Union[float, None] = None,
-                              interpolation: str = 'continuous') -> None:
+                              interpolation: str = 'nearest') -> None:
         """
         Loading Atlas into the Library by name.
 
@@ -205,7 +206,7 @@ class AtlasLibrary:
                 {}
                 File: 
                 {}
-                """.format(str(sorted(self.indices)), str(sorted(list(labels_dict.keys())))))
+                """.format(str(sorted(atlas_object.indices)), str(sorted(list(labels_dict.keys())))))
 
                 atlas_object.roi_list = [RoiObject(index=i, label=str(i), size=np.sum(i == atlas_object.map)) for i in
                                          atlas_object.indices]

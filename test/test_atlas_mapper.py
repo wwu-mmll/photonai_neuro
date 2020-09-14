@@ -21,7 +21,7 @@ class AtlasMapperTests(NeuroBaseTest):
                             metrics=['accuracy'],
                             best_config_metric='accuracy',
                             inner_cv=KFold(n_splits=2),
-                            verbosity=2,
+                            verbosity=0,
                             output_settings=settings,
                             cache_folder=cache_folder)
 

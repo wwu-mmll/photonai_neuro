@@ -29,7 +29,7 @@ class NiftiConverter:
                 load_data = image.load_img(X)
             else:
                 msg = "Cannot interpret the types in the given input_data list."
-        elif isinstance(X, str):
+        elif isinstance(X, str) or (isinstance(X, np.ndarray) and len(X.shape) in [3, 4]):
             load_data = image.load_img(X)
         elif isinstance(X, Nifti1Image):
             load_data = X
