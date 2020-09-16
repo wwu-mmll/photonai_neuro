@@ -7,7 +7,9 @@ services:
   - docker
 install:
   - sudo apt-get update
-  - pip install -r requirements.txt
+  - python setup.py egg_info
+  - pip install -r photonai_neuro.egg-info/requires.txt
+  - pip install --upgrade git+https://github.com/wwu-mmll/photonai.git@develop
   - pip install pytest
   - pip install pytest-cov
   - pip install coveralls
