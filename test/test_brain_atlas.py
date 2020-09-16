@@ -51,23 +51,39 @@ class BrainAtlasTests(NeuroBaseTest):
             atlas = PipelineElement('BrainAtlas', atlas_name='XXXXX', extract_mode='vec', batch_size=20)
             atlas.transform(self.X)
 
-    def test_first_half_atlases(self):
+    def test_first_quarter_atlases(self):
         a = sorted(AtlasLibrary().ATLAS_DICTIONARY.keys())
-        self.list_of_atlases(a[:len(a)//2])
+        self.list_of_atlases(a[:len(a)//4])
+        self.validity_check_roi_extraction(a[:len(a)//4])
+        AtlasLibrary.LIBRARY = {}
 
-    def test_second_half_atlases(self):
+    def test_second_quarter_atlases(self):
         a = sorted(AtlasLibrary().ATLAS_DICTIONARY.keys())
-        self.list_of_atlases(a[len(a)//2:])
+        self.list_of_atlases(a[len(a)//4:len(a)//2])
+        self.validity_check_roi_extraction(a[len(a)//4:len(a)//2])
+        AtlasLibrary.LIBRARY = {}
+
+    def test_third_quarter_atlases(self):
+        a = sorted(AtlasLibrary().ATLAS_DICTIONARY.keys())
+        self.list_of_atlases(a[len(a)//2:int(3/4 * len(a))])
+        self.validity_check_roi_extraction(a[len(a)//2:int(3/4 * len(a))])
+        AtlasLibrary.LIBRARY = {}
+
+    def test_forth_quarter_atlases(self):
+        a = sorted(AtlasLibrary().ATLAS_DICTIONARY.keys())
+        self.list_of_atlases(a[int(3/4 * len(a)):])
+        self.validity_check_roi_extraction(a[int(3/4 * len(a)):])
+        AtlasLibrary.LIBRARY = {}
 
     def list_of_atlases(self, atlases):
         for atlas in atlases:
-            logger.debug("Running tests for atlas {}".format(atlas))
+            print("Running tests for atlas {}".format(atlas))
             brain_atlas = PipelineElement('BrainAtlas', atlas_name=atlas, extract_mode='mean')
-            brain_atlas.transform(self.X)
+            brain_atlas.transform(self.X[:2])
 
-    def test_validity_check_roi_extraction(self):
+    def validity_check_roi_extraction(self, atlases):
         affine, shape = NiftiConverter.get_format_info_from_first_image(self.X)
-        for atlas in AtlasLibrary().ATLAS_DICTIONARY.keys():
+        for atlas in atlases:
             logger.debug("Checking atlas {}".format(atlas))
             rois = AtlasLibrary().get_atlas(atlas, affine, shape).roi_list[1:3]
             rois = [roi.label for roi in rois]
