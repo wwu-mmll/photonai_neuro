@@ -51,52 +51,32 @@ class BrainAtlasTests(NeuroBaseTest):
             atlas = PipelineElement('BrainAtlas', atlas_name='XXXXX', extract_mode='vec', batch_size=20)
             atlas.transform(self.X)
 
-    def test_first_quarter_atlases(self):
-        a = sorted(AtlasLibrary().ATLAS_DICTIONARY.keys())
-        self.list_of_atlases(a[:len(a)//4])
-        self.validity_check_roi_extraction(a[:len(a)//4])
-        AtlasLibrary.LIBRARY = {}
+    def test_atlases(self):
+        for atlas in AtlasLibrary().ATLAS_DICTIONARY.keys():
+            self.run_atlas(atlas)
+            self.validity_check_roi_extraction(atlas)
+            AtlasLibrary.LIBRARY = {}
 
-    def test_second_quarter_atlases(self):
-        a = sorted(AtlasLibrary().ATLAS_DICTIONARY.keys())
-        self.list_of_atlases(a[len(a)//4:len(a)//2])
-        self.validity_check_roi_extraction(a[len(a)//4:len(a)//2])
-        AtlasLibrary.LIBRARY = {}
+    def run_atlas(self, atlas):
+        print("Running tests for atlas {}".format(atlas))
+        brain_atlas = PipelineElement('BrainAtlas', atlas_name=atlas, extract_mode='mean')
+        brain_atlas.transform(self.X[:2])
 
-    def test_third_quarter_atlases(self):
-        a = sorted(AtlasLibrary().ATLAS_DICTIONARY.keys())
-        self.list_of_atlases(a[len(a)//2:int(3/4 * len(a))])
-        self.validity_check_roi_extraction(a[len(a)//2:int(3/4 * len(a))])
-        AtlasLibrary.LIBRARY = {}
-
-    def test_forth_quarter_atlases(self):
-        a = sorted(AtlasLibrary().ATLAS_DICTIONARY.keys())
-        self.list_of_atlases(a[int(3/4 * len(a)):])
-        self.validity_check_roi_extraction(a[int(3/4 * len(a)):])
-        AtlasLibrary.LIBRARY = {}
-
-    def list_of_atlases(self, atlases):
-        for atlas in atlases:
-            print("Running tests for atlas {}".format(atlas))
-            brain_atlas = PipelineElement('BrainAtlas', atlas_name=atlas, extract_mode='mean')
-            brain_atlas.transform(self.X[:2])
-
-    def validity_check_roi_extraction(self, atlases):
+    def validity_check_roi_extraction(self, atlas):
         affine, shape = NiftiConverter.get_format_info_from_first_image(self.X)
-        for atlas in atlases:
-            logger.debug("Checking atlas {}".format(atlas))
-            rois = AtlasLibrary().get_atlas(atlas, affine, shape).roi_list[1:3]
-            rois = [roi.label for roi in rois]
-            brain_atlas = BrainAtlas(atlas_name=atlas)
-            brain_atlas.rois = rois
-            X_t = brain_atlas.transform(self.X[0:2])
+        logger.debug("Checking atlas {}".format(atlas))
+        rois = AtlasLibrary().get_atlas(atlas, affine, shape).roi_list[1:3]
+        rois = [roi.label for roi in rois]
+        brain_atlas = BrainAtlas(atlas_name=atlas)
+        brain_atlas.rois = rois
+        X_t = brain_atlas.transform(self.X[0:2])
 
-            "-".join(rois)
-            name = os.path.join(self.test_folder, atlas + '_' + "-".join(rois))
-            # todo: what good does that do?
-            brain_atlas._validity_check_roi_extraction(X_t[0], filename=name)
-            self.assertTrue(os.path.exists(name+".nii"))
-            os.remove(name+".nii")
+        "-".join(rois)
+        name = os.path.join(self.test_folder, atlas + '_' + "-".join(rois))
+        # todo: what good does that do?
+        brain_atlas._validity_check_roi_extraction(X_t[0], filename=name)
+        self.assertTrue(os.path.exists(name+".nii"))
+        os.remove(name+".nii")
 
     def test_roi_indices(self):
         for _ in range(10):
@@ -106,7 +86,6 @@ class BrainAtlasTests(NeuroBaseTest):
                                extract_mode='vec',
                                rois=roi_list_rand_order)
             atlas.transform(self.X[:2])
-            # todo: why is that reordered?
             self.assertListEqual(list(atlas.roi_allocation.keys()),
                                  ["Hippocampus_L", "Hippocampus_R", "Amygdala_L", "Amygdala_R"])
 
