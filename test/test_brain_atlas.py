@@ -51,10 +51,18 @@ class BrainAtlasTests(NeuroBaseTest):
             atlas = PipelineElement('BrainAtlas', atlas_name='XXXXX', extract_mode='vec', batch_size=20)
             atlas.transform(self.X)
 
-    def test_all_atlases(self):
-        for atlas in AtlasLibrary().ATLAS_DICTIONARY.keys():
+    def test_first_half_atlases(self):
+        a = sorted(AtlasLibrary().ATLAS_DICTIONARY.keys())
+        self.list_of_atlases(a[:len(a)//2])
+
+    def test_second_half_atlases(self):
+        a = sorted(AtlasLibrary().ATLAS_DICTIONARY.keys())
+        self.list_of_atlases(a[len(a)//2:])
+
+    def list_of_atlases(self, atlases):
+        for atlas in atlases:
             logger.debug("Running tests for atlas {}".format(atlas))
-            brain_atlas = PipelineElement('BrainAtlas', atlas_name=atlas, extract_mode='vec')
+            brain_atlas = PipelineElement('BrainAtlas', atlas_name=atlas, extract_mode='mean')
             brain_atlas.transform(self.X)
 
     def test_validity_check_roi_extraction(self):
