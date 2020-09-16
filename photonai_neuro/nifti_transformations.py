@@ -89,19 +89,19 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
     ---------
     * `voxel_size`: Union[int, List] - [default: 3]
         Value to create target_affine matrix for resmapled_img function.
+        Length of list has to be in [3, 4].
     * `interpolation`: str - [default: 'nearest']
         Set the resample method.
     * `output_img`: bool - [default: False]
-        Indicates the output format. False -> array,  True -> object (Nifti1Image).
+        Indicates the output format. False -> np.ndarray,  True -> object (Nifti1Image).
 
     """
-    def __init__(self, voxel_size: Union[int, List] = 3, interpolation: str = 'continuous', output_img: bool = False):
+    def __init__(self, voxel_size: Union[float, int, List] = 3, interpolation: str = 'nearest', output_img: bool = False):
         super(ResampleImages, self).__init__(output_img=output_img)
         self._voxel_size = None
         self.voxel_size = voxel_size
         self._interpolation = None
         self.interpolation = interpolation
-
 
     def fit(self, X, y=None, **kwargs):
         return self
@@ -125,13 +125,13 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
 
     @voxel_size.setter
     def voxel_size(self, voxel_size):
-        if isinstance(voxel_size, int):
+        if isinstance(voxel_size, (int, float)):
             self._voxel_size = [voxel_size, voxel_size, voxel_size]
-        elif isinstance(voxel_size, list) and len(voxel_size) == 3 \
-                and all(isinstance(x, (int, np.int, np.int64, np.int32)) for x in voxel_size):
+        elif isinstance(voxel_size, list) and len(voxel_size) in [3, 4] \
+                and all(isinstance(x, (int, np.int, np.int64, np.int32, float)) for x in voxel_size):
             self._voxel_size = voxel_size
         else:
-            msg = "ResampleImages expected voxel_size as int or a list of three ints like [3, 3, 3]."
+            msg = "ResampleImages expected voxel_size as int or a list of three/four ints like [3, 3, 3]."
             logger.error(msg)
             raise ValueError(msg)
 

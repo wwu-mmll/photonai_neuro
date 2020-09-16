@@ -7,7 +7,8 @@ import warnings
 from photonai.base import PipelineElement
 from photonai.photonlogger import logger
 
-from photonai_neuro import AtlasLibrary, BrainAtlas, BrainMask
+from photonai_neuro import AtlasLibrary, BrainAtlas
+from photonai_neuro.objects import NiftiConverter
 from test.test_neuro import NeuroBaseTest
 
 
@@ -57,7 +58,7 @@ class BrainAtlasTests(NeuroBaseTest):
             brain_atlas.transform(self.X)
 
     def test_validity_check_roi_extraction(self):
-        affine, shape = BrainMask.get_format_info_from_first_image(self.X)
+        affine, shape = NiftiConverter.get_format_info_from_first_image(self.X)
         for atlas in AtlasLibrary().ATLAS_DICTIONARY.keys():
             logger.debug("Checking atlas {}".format(atlas))
             rois = AtlasLibrary().get_atlas(atlas, affine, shape).roi_list[1:3]

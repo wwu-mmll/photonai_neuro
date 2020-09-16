@@ -1,5 +1,5 @@
 import numpy as np
-
+from typing import Union, Tuple
 from nilearn import image
 from nibabel.nifti1 import Nifti1Image
 
@@ -9,23 +9,23 @@ from photonai.photonlogger.logger import logger
 class NiftiConverter:
     """
     Handle transformation for different inputs to homogeneous output.
-    Output is a Nifti1Image object.
+    Output is a Nifti1Image object and the count of subjects (4th dimension).
     """
 
     @classmethod
-    def transform(cls, X):
+    def transform(cls, X: Union[list, np.ndarray, Nifti1Image, str]) -> Tuple[Nifti1Image, int]:
         n_subjects = 1
         load_data = None
         msg = None
         # load all niftis to memory
         if isinstance(X, list) or isinstance(X, np.ndarray):
             n_subjects = len(X)
-            if all([isinstance(x, str) for x in X]):
+            if n_subjects and all([isinstance(x, str) for x in X]):
                 load_data = image.load_img(X)
-            elif all([isinstance(x, np.ndarray) for x in X]):
+            elif n_subjects and all([isinstance(x, np.ndarray) for x in X]):
                 n_subjects = X.shape[0]
                 load_data = image.load_img(X)
-            elif all([isinstance(x, Nifti1Image) for x in X]):
+            elif n_subjects and all([isinstance(x, Nifti1Image) for x in X]):
                 load_data = image.load_img(X)
             else:
                 msg = "Cannot interpret the types in the given input_data list."
@@ -41,18 +41,63 @@ class NiftiConverter:
 
         return load_data, n_subjects
 
+    @staticmethod
+    def get_format_info_from_first_image(X) -> Tuple[np.ndarray, Union[tuple, list]]:
+
+        img, n_subjects = NiftiConverter.transform(X)
+        if n_subjects > 1:
+            img = img.slicer[:, :, :, 0]
+
+        if img is not None:
+            if len(img.shape) > 3:
+                img_shape = img.shape[:3]
+            else:
+                img_shape = img.shape
+            return img.affine, img_shape
+        else:
+            msg = "Could not load image for affine and shape definition."
+            logger.error(msg)
+            raise ValueError(msg)
+
 
 class RoiObject:
+    """
+    The RoiObjects guarantees a clear assignment of ROIs within the mask.
+    The ROI known as `label` with size `size` defined by the index in the mask.
+    Every ROI got an unique index stored in an mask object.
 
-    def __init__(self, index=0, label='', size=None, mask=None):
+    Parameter
+    ---------
+    * `index` [int]:
+        Unique index for label and mask.
+    * `label` [str]:
+        Label of region of interest (ROI).
+    * `size` [int]:
+        Size of positiv voxels in mask.
+    * `mask` []:
+        Mask containing ROI indeces.
+
+    For later versions: Performance advantage if all ROI objects save references of mask
+    and the property roi_mask returns the applied index on mask.
+    """
+    def __init__(self, index: int, label: str = '', size: int = None, mask=None):
         self.index = index
         self.label = label
-        self.size = size
         self.mask = mask
-        self.is_empty = False
+        self.size = size
+        self.is_empty = True if self.size == 0 else False
 
 
 class NeuroTransformerMixin:
+    """
+    Abstract class for objects with possible output NiftiImage/np.ndarray.
+
+    Parameter
+    ---------
+    * `output_img` [bool, default: False]:
+        True -> return is instance of NiftiImage
+        False -> return is instance of np.ndarray (nii.dataobj)
+    """
 
     def __init__(self, output_img: bool = False):
         self.output_img = output_img
@@ -69,14 +114,23 @@ class MaskObject:
 
 class AtlasObject:
 
-    def __init__(self, name='', path='', labels_file='', mask_threshold=None, affine=None, shape=None, indices=list()):
+    def __init__(self,
+                 name: str = '',
+                 path: str = '',
+                 labels_file: str = '',
+                 mask_threshold: float = None,
+                 affine: np.ndarray = None,
+                 shape: Union[tuple, np.ndarray] = None,
+                 indices: list = None):
+
+        self._rois_available = None
+
         self.name = name
         self.path = path
         self.labels_file = labels_file
         self.mask_threshold = mask_threshold
-        self.indices = indices
-        self.roi_list = list()
-        self._rois_available = None
+        self.indices = [] if indices is None else indices
+        self.roi_list = []
         self.rois_active = []
         self.rois_allocation = None
         self.map = None

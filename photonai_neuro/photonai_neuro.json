@@ -18,5 +18,13 @@
    "PatchImages":[
       "photonai_neuro.nifti_transformations.PatchImages",
       "Transformer"
+   ],
+   "SpaceNetClassifier":[
+      "nilearn.decoding.SpaceNetClassifier",
+      "Estimator"
+   ],
+   "SpaceNetRegressor":[
+      "nilearn.decoding.SpaceNetRegressor",
+      "Estimator"
    ]
 }

@@ -250,8 +250,7 @@ class AtlasMapper:
             model_path = os.path.join(os.path.join(folder, infos['hyperpipe_name'] + "_results"),
                                       os.path.basename(infos['model_filename']))
             roi_models[roi_name] = Hyperpipe.load_optimum_pipe(model_path)
-            hyperpipes_to_fit = roi_models
         atlas_mapper = AtlasMapper(neuro_element=neuro_element, folder=folder)
-        atlas_mapper.hyperpipes_to_fit = hyperpipes_to_fit
+        atlas_mapper.hyperpipes_to_fit = roi_models
         atlas_mapper.hyperpipe_infos = hyperpipe_infos
         return atlas_mapper

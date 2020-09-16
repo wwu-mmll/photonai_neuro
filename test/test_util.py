@@ -3,6 +3,7 @@ from photonai_neuro.util import register_photonai_neuro, delete_photonai_neuro
 
 from photonai.base.registry.registry import PhotonRegistry
 
+
 class UtilTest(unittest.TestCase):
 
     def test_register_photonai_neuro(self):

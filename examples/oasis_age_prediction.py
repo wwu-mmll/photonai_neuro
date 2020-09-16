@@ -8,8 +8,6 @@ from photonai.base import Hyperpipe, PipelineElement, OutputSettings
 from photonai_neuro import NeuroBranch
 from photonai.optimization import Categorical
 
-from photonai_neuro.objects import NiftiConverter
-
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 # GET DATA FROM OASIS
@@ -19,7 +17,6 @@ age = dataset_files.ext_vars['age'].astype(float)
 y = np.array(age)
 X = np.array(dataset_files.gray_matter_maps)
 
-a = NiftiConverter.transform(X)
 
 def my_monitor(X, y=None, **kwargs):
     print(X.shape)

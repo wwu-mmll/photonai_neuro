@@ -1,5 +1,4 @@
 import os
-
 import numpy as np
 from nibabel.nifti1 import Nifti1Image
 
@@ -20,11 +19,16 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
     ----------
     * `name` [str]:
         Name of the NeuroModule pipeline branch
+    * `nr_of_processes` [int, default=1]
+        Count of parallel processes.
+    * `output_img` [bool, default=False]
+        True -> return nifti object, False -> return np.ndarray (nifti.dataobj)
 
     """
+
     NEURO_ELEMENTS = PhotonRegistry().get_package_info(['photonai_neuro'])
 
-    def __init__(self, name, nr_of_processes=1, output_img: bool = False):
+    def __init__(self, name, nr_of_processes: int = 1, output_img: bool = False):
         ParallelBranch.__init__(self, name, nr_of_processes=nr_of_processes)
         NeuroTransformerMixin.__init__(self, output_img=output_img)
 
@@ -37,6 +41,7 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
         ----------
         * `pipe_element` [PipelineElement]:
             The transformer object to add. Should be registered in the Neuro module.
+
         """
         if pipe_element.name in NeuroBranch.NEURO_ELEMENTS:
             # as the neuro branch is parallelized and processes several images subsequently on
@@ -88,5 +93,3 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
                     and isinstance(X_new[0], Nifti1Image):
                 X_new = np.asarray([i.dataobj for i in X_new])
         return X_new, y, kwargs
-
-

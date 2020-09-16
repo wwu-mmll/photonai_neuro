@@ -17,5 +17,7 @@ if not os.path.isfile(registered_file):
         f.write(str(datetime.now()))
 
 from .atlas_mapper import AtlasMapper
-from .brain_atlas import BrainMask, BrainAtlas, AtlasLibrary
+from .brain_mask import BrainMask
+from .brain_atlas import BrainAtlas
+from .atlas_library import AtlasLibrary
 from .neuro_branch import NeuroBranch

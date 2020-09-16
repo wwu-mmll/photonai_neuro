@@ -37,7 +37,7 @@ class BrainMask(BaseEstimator):
     def transform(self, X, y=None, **kwargs) -> np.ndarray:
 
         if self.affine is None and self.shape is None:
-            self.affine, self.shape = BrainMask.get_format_info_from_first_image(X)
+            self.affine, self.shape = NiftiConverter.get_format_info_from_first_image(X)
 
         # checking ground mask
         if isinstance(self.mask_image, str):
@@ -88,24 +88,6 @@ class BrainMask(BaseEstimator):
             raise NotImplementedError(msg)
 
         return self.masker.inverse_transform(X)
-
-    @staticmethod
-    def get_format_info_from_first_image(X):
-
-        img, n_subjects = NiftiConverter.transform(X)
-        if n_subjects > 1:
-            img = img.slicer[:, :, :, 0]
-
-        if img is not None:
-            if len(img.shape) > 3:
-                img_shape = img.shape[:3]
-            else:
-                img_shape = img.shape
-            return img.affine, img_shape
-        else:
-            msg = "Could not load image for affine and shape definition."
-            logger.error(msg)
-            raise ValueError(msg)
 
     @staticmethod
     def _check_single_roi(X, single_roi):

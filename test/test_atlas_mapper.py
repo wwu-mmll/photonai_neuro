@@ -31,10 +31,11 @@ class AtlasMapperTests(NeuroBaseTest):
         my_pipe += PipelineElement('LinearSVC')
         return my_pipe
 
-    def create_data(self):
+    @staticmethod
+    def create_data():
         n_subjects = 20
         dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
-        age = dataset_files.ext_vars['age'].astype(float)
+        _ = dataset_files.ext_vars['age'].astype(float)
         gender = dataset_files.ext_vars['mf'].astype(str)
         y = np.array(gender)
         X = np.array(dataset_files.gray_matter_maps)
@@ -43,8 +44,6 @@ class AtlasMapperTests(NeuroBaseTest):
     def test_fit_reload_all(self):
         results_folder = './tmp/'
         X, y = self.create_data()
-        #brain_atlas = PipelineElement('BrainAtlas', atlas_name="Yeo_7", extract_mode='vec',
-        #                              rois='all', batch_size=200)
         brain_atlas = PipelineElement('BrainAtlas', atlas_name="AAL",
                                       rois=['Hippocampus_L', 'Hippocampus_R', "Frontal_Sup_Orb_L"], batch_size=200)
 

@@ -7,6 +7,7 @@ from nibabel.nifti1 import Nifti1Image
 from photonai.base import PipelineElement
 
 from photonai_neuro import BrainMask, AtlasLibrary, BrainAtlas
+from photonai_neuro.objects import NiftiConverter
 from test.test_neuro import NeuroBaseTest
 
 
@@ -14,7 +15,7 @@ class BrainMaskTests(NeuroBaseTest):
 
     def test_brain_masker(self):
 
-        affine, shape = BrainMask.get_format_info_from_first_image(self.X)
+        affine, shape = NiftiConverter.get_format_info_from_first_image(self.X)
         atlas_obj = AtlasLibrary().get_atlas(self.atlas_name, affine, shape)
         roi_objects = BrainAtlas._get_rois(atlas_obj, which_rois=self.roi_list, background_id=0)
 
@@ -53,12 +54,12 @@ class BrainMaskTests(NeuroBaseTest):
 
     def test_get_info(self):
         for x in [self.X, self.X[0], image.load_img(self.X[0])]:
-            affine, shape = BrainMask.get_format_info_from_first_image(x)
+            affine, shape = NiftiConverter.get_format_info_from_first_image(x)
             self.assertIsInstance(affine, np.ndarray)
             self.assertIsInstance(shape, tuple)
 
         with self.assertRaises(ValueError):
-            BrainMask.get_format_info_from_first_image(42)
+            NiftiConverter.get_format_info_from_first_image(42)
 
     def test_inverse(self):
         custom_mask = os.path.join(self.atlas_folder, 'Cerebellum/P_08_Cere.nii.gz')
@@ -73,3 +74,14 @@ class BrainMaskTests(NeuroBaseTest):
         back_transformed = mask.inverse_transform(result[0])[0]
         self.assertIsInstance(back_transformed, Nifti1Image)
         # todo: check shape: that it is equal to mask?
+
+    def test_corrupt_input(self):
+        custom_mask = np.empty(shape=(100, 100))
+        with self.assertRaises(TypeError):
+            mask = PipelineElement('BrainMask', mask_image=custom_mask, extract_mode="vec", batch_size=20)
+            _ = mask.transform(self.X)
+
+    def test_check_single_roi(self):
+        for a in [np.empty(shape=(100, 100)), ["1", "2", "1", "6"], "1216"]:
+            with self.assertRaises(ValueError):
+                BrainMask._check_single_roi(a, None)

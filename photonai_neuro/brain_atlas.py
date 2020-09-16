@@ -1,4 +1,3 @@
-import time
 from typing import Union
 import time
 
@@ -8,9 +7,8 @@ from sklearn.base import BaseEstimator
 
 from photonai.photonlogger.logger import logger
 
-from photonai_neuro.objects import RoiObject, NiftiConverter
+from photonai_neuro.objects import NiftiConverter
 from photonai_neuro.atlas_library import AtlasLibrary
-from photonai_neuro.brain_mask import BrainMask
 
 
 class BrainAtlas(BaseEstimator):
@@ -98,7 +96,7 @@ class BrainAtlas(BaseEstimator):
         # 1. validate if all X are in the same space and have the same voxelsize and have the same orientation
 
         # get ROI mask
-        self.affine, self.shape = BrainMask.get_format_info_from_first_image(X)
+        self.affine, self.shape = NiftiConverter.get_format_info_from_first_image(X)
         atlas_obj = AtlasLibrary().get_atlas(self.atlas_name, self.affine, self.shape, self.mask_threshold)
         roi_objects = self._get_rois(atlas_obj, which_rois=self.rois, background_id=self.background_id)
 

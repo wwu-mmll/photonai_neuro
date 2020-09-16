@@ -4,7 +4,6 @@ import warnings
 from os import path
 from pathlib import Path
 from typing import Union
-import time
 
 import nibabel as nib
 import numpy as np
@@ -220,16 +219,12 @@ class AtlasLibrary:
         else:  # if we don't have a labels file, we just use str(indices) as labels
             atlas_object.roi_list = [RoiObject(index=i, label=str(i), size=np.sum(i == atlas_object.map)) for i in
                                      atlas_object.indices]
-        start = time.time()
-        # check for empty ROIs and create roi mask
 
+        # check for empty ROIs and create roi mask
         for roi in atlas_object.roi_list:
-            if roi.size == 0:
+            if roi.is_empty:
                 continue
             roi.mask = image.new_img_like(atlas_object.path, atlas_object.map == roi.index)
-            # check if roi is empty
-            if np.sum(roi.mask.dataobj != 0) == 0:
-                roi.is_empty = True
 
         # finally add atlas to atlas library
         AtlasLibrary.LIBRARY[(atlas_name, str(target_affine), str(target_shape), str(mask_threshold))] = atlas_object

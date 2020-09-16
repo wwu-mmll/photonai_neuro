@@ -8,7 +8,6 @@ from photonai.base import PipelineElement, CallbackElement
 from photonai.base.photon_pipeline import CacheManager
 
 from photonai_neuro import NeuroBranch
-from photonai_neuro.objects import NiftiConverter
 from test.test_neuro import NeuroBaseTest
 
 
@@ -25,21 +24,22 @@ class NeuroBranchTests(NeuroBaseTest):
 
         def create_instances_and_transform(neuro_class_str, param_dict, transformed_X):
 
-            for i in range(1, 4):
-                if i == 1 or i == 3:
+            for i in range(4):
+                if i in [0, 2]:
                     obj = NeuroBranch(name="single core application", nr_of_processes=1)
                 else:
                     obj = NeuroBranch(name="multi core application", nr_of_processes=3)
 
-                if i < 3:
+                if i in [0, 1]:
                     obj += PipelineElement(neuro_class_str, **param_dict)
-                if i >= 3:
+                else:
                     obj += PipelineElement(neuro_class_str, batch_size=5, **param_dict)
 
                 # transform data
                 obj.base_element.cache_folder = self.cache_folder_path
-                #CacheManager.clear_cache_files(obj.base_element.cache_folder, True)
+                CacheManager.clear_cache_files(obj.base_element.cache_folder, True)
                 obj.base_element.current_config = {'test_suite': 1}
+
                 new_X, _, _ = obj.transform(self.X)
                 obj.base_element.clear_cache()
 
@@ -135,7 +135,7 @@ class NeuroBranchTests(NeuroBaseTest):
             nb.test_transform(self.X)
 
     def test_test_transform_multi(self):
-        nb = NeuroBranch('neuro_branch')
+        nb = NeuroBranch('neuro_branch', nr_of_processes=2)
         nb += PipelineElement('SmoothImages', fwhm=10)
         nb += PipelineElement('ResampleImages', voxel_size=5)
 
@@ -193,14 +193,17 @@ class NeuroBranchTests(NeuroBaseTest):
     def test_invariance(self):
         nb1 = NeuroBranch('neuro_branch', nr_of_processes=4, output_img=True)
         nb1 += PipelineElement('ResampleImages', voxel_size=5, batch_size=1, interpolation='nearest')
+        nb1.base_element.cache_folder = self.cache_folder_path
+        CacheManager.clear_cache_files(nb1.base_element.cache_folder, True)
         pai_result1, _, _ = nb1.transform(self.X)
+        del nb1
 
         nb2 = NeuroBranch('neuro_branch', nr_of_processes=4, output_img=False)
         nb2 += PipelineElement('ResampleImages', voxel_size=5, batch_size=2, interpolation='nearest')
+        nb2.base_element.cache_folder = self.cache_folder_path
+        CacheManager.clear_cache_files(nb2.base_element.cache_folder, True)
         pai_result2, _, _ = nb2.transform(self.X)
-        #pai_result2 = np.moveaxis(pai_result2, -1, 0)
 
-        #rawX = NiftiConverter.transform(self.X)
         nilearn_result = image.resample_img(self.X,
                                             target_affine=np.diag([5, 5, 5]),
                                             interpolation='nearest')
@@ -209,5 +212,3 @@ class NeuroBranchTests(NeuroBaseTest):
         for i in range(len(self.X)):
             np.testing.assert_equal(nilearn_result[i].dataobj, pai_result2[i, :, :, :])
             np.testing.assert_equal(nilearn_result[i].dataobj, pai_result1[i].dataobj)
-        print("test")
-
