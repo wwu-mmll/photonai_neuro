@@ -62,8 +62,7 @@ class SmoothImagesTests(NeuroBaseTest):
 
         with warnings.catch_warnings(record=True) as w:
             PipelineElement('SmoothImages', hyperparameters={}, fwhm=None)
-            assert any("the fwhm in SmoothImages is None, no filtering is performed" \
-                       in s for s in [e.message.args[0] for e in w])
+            assert any("the fwhm in SmoothImages is None" in s for s in [e.message.args[0] for e in w])
 
         with self.assertRaises(ValueError):
             PipelineElement('SmoothImages', hyperparameters={}, fwhm="quick")

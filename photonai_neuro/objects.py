@@ -42,7 +42,17 @@ class NiftiConverter:
         return load_data, n_subjects
 
     @staticmethod
-    def get_format_info_from_first_image(X) -> Tuple[np.ndarray, Union[tuple, list]]:
+    def get_format_info_from_first_image(X: Union[list, np.ndarray, Nifti1Image, str]) \
+            -> Tuple[np.ndarray, Union[tuple, list]]:
+        """
+        Return Affine and Shape of first image.
+
+        Parameter
+        ---------
+        * `X` [Union[list, np.ndarray, Nifti1Image, str]]:
+            Input data - return only affine and shape of first image.
+
+        """
 
         img, n_subjects = NiftiConverter.transform(X)
         if n_subjects > 1:
@@ -79,6 +89,7 @@ class RoiObject:
 
     For later versions: Performance advantage if all ROI objects save references of mask
     and the property roi_mask returns the applied index on mask.
+
     """
     def __init__(self, index: int, label: str = '', size: int = None, mask=None):
         self.index = index
@@ -97,6 +108,7 @@ class NeuroTransformerMixin:
     * `output_img` [bool, default: False]:
         True -> return is instance of NiftiImage
         False -> return is instance of np.ndarray (nii.dataobj)
+
     """
 
     def __init__(self, output_img: bool = False):

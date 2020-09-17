@@ -220,11 +220,9 @@ class AtlasLibrary:
             atlas_object.roi_list = [RoiObject(index=i, label=str(i), size=np.sum(i == atlas_object.map)) for i in
                                      atlas_object.indices]
 
-        # check for empty ROIs and create roi mask
+        # set new mask instance for non-empty ROI
         for roi in atlas_object.roi_list:
-            if roi.is_empty:
-                continue
-            roi.mask = image.new_img_like(atlas_object.path, atlas_object.map == roi.index)
+            self._add_mask_for_roi(atlas_object, roi)
 
         # finally add atlas to atlas library
         AtlasLibrary.LIBRARY[(atlas_name, str(target_affine), str(target_shape), str(mask_threshold))] = atlas_object
@@ -274,11 +272,8 @@ class AtlasLibrary:
         if roi.size == 0:
             return
         roi.mask = image.new_img_like(atlas_object.path, atlas_object.map == roi.index)
-        # check if roi is empty
-        if np.sum(roi.mask.dataobj != 0) == 0:
-            roi.is_empty = True
 
-    def _load_photon_masks(self):
+    def _load_photon_masks(self) -> dict:
         """
         Intern function for creating MaskObjects for every available Mask in the MASK_DICTIONARY.
         :return: photon_masks: dict, Mask by mask_id
@@ -290,7 +285,7 @@ class AtlasLibrary:
             photon_masks[mask_id] = MaskObject(name=mask_id, mask_file=mask_file)
         return photon_masks
 
-    def _load_photon_atlases(self):
+    def _load_photon_atlases(self) -> dict:
         """
         Intern function for creating AtlasObjects for every available Atlas in the ATLAS_DICTIONARY.
         :return: photon_atlases: dict, dict atlas by atlas_id
@@ -317,7 +312,7 @@ class AtlasLibrary:
         return True
 
     @staticmethod
-    def _check_custom_mask(mask_file):
+    def _check_custom_mask(mask_file: str):
         if not path.isfile(mask_file):
             msg = "Cannot find custom mask {}".format(mask_file)
             logger.error(msg)
@@ -325,7 +320,7 @@ class AtlasLibrary:
         return MaskObject(name=mask_file, mask_file=mask_file)
 
     @staticmethod
-    def _check_custom_atlas(atlas_file):
+    def _check_custom_atlas(atlas_file: str):
         logger.debug("Checking custom atlas")
         if not path.isfile(atlas_file):
             msg = "Cannot find custom atlas {}".format(atlas_file)
@@ -339,7 +334,7 @@ class AtlasLibrary:
         return AtlasObject(name=atlas_file, path=atlas_file, labels_file=labels_file)
 
     @staticmethod
-    def find_rois_by_label(atlas_obj: AtlasObject, query_list: list):
+    def find_rois_by_label(atlas_obj: AtlasObject, query_list: list) -> list:
         """
         Returns all ROIs of given AtlasObject with roi_label in query_list.
         :param atlas_obj: AtlasObject, the object we are searching in
@@ -349,7 +344,7 @@ class AtlasLibrary:
         return [i for i in atlas_obj.roi_list if i.label in query_list]
 
     @staticmethod
-    def find_rois_by_index(atlas_obj: AtlasObject, query_list: list):
+    def find_rois_by_index(atlas_obj: AtlasObject, query_list: list) -> list:
         """
         Returns all ROIs of given AtlasObject with roi_index in query_list.
         :param atlas_obj: AtlasObject, the object we are searching in

@@ -112,3 +112,18 @@ class BrainAtlasTests(NeuroBaseTest):
         with warnings.catch_warnings(record=True) as w:
             AtlasLibrary().list_rois("plAtlas")
             assert len(w) == 1
+
+    def test_atlas_threshold(self):
+        roi_list = ["Hippocampus_L", "Hippocampus_R", "Amygdala_L", "Amygdala_R"]
+        atlas_wo_threshold = BrainAtlas(atlas_name=self.atlas_name,
+                                        extract_mode='vec',
+                                        rois=roi_list)
+        atlas_w_threshold = BrainAtlas(atlas_name=self.atlas_name,
+                                       extract_mode='vec',
+                                       rois=roi_list,
+                                       mask_threshold=3000)
+        a = atlas_wo_threshold.transform(self.X[:2])
+        b = atlas_w_threshold.transform(self.X[:2])
+
+        self.assertEqual(a.shape[0], b.shape[0])
+        self.assertGreater(a.shape[1], b.shape[1])

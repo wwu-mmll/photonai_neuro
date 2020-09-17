@@ -14,7 +14,7 @@ from photonai_neuro.atlas_library import AtlasLibrary
 class BrainMask(BaseEstimator):
     """BrainMask
 
-    Transform to given mask image.
+    Transform based on given mask image.
     """
 
     def __init__(self,

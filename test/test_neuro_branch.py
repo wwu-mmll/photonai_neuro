@@ -154,13 +154,12 @@ class NeuroBranchTests(NeuroBaseTest):
         nb = NeuroBranch('neuro_branch')
         nb += PipelineElement('SmoothImages', fwhm=10)
         nb += PipelineElement('ResampleImages', voxel_size=5)
-        nb += PipelineElement('BrainAtlas', rois=['Hippocampus_L', 'Hippocampus_R'],
-                               atlas_name="AAL", extract_mode='vec')
+        custom_mask = os.path.join(self.atlas_folder, 'Cerebellum/P_08_Cere.nii.gz')
+        nb += PipelineElement('BrainMask', mask_image=custom_mask, extract_mode='vec')
 
         nb.base_element.cache_folder = self.cache_folder_path
         CacheManager.clear_cache_files(nb.base_element.cache_folder, True)
         # set the config so that caching works
-        nb.set_params(**{'SmoothImages__fwhm': 10, 'ResampleImages__voxel_size': 5})
 
         # last element is not returning in nii-format
         with self.assertRaises(ValueError):

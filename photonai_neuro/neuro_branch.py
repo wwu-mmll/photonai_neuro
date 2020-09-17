@@ -64,6 +64,8 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
         copy_of_me = self.copy_me()
         copy_of_me.nr_of_processes = 1
         copy_of_me.output_img = True
+        # ToDo: What does this mean? extraction_mode cannot be 'list' for BrainAtlas
+        # ToDo: Should test_transform work for brain_atlas?
         for p_element in copy_of_me.elements:
             if hasattr(p_element, 'base_element') and isinstance(p_element.base_element, BrainAtlas):
                 p_element.base_element.extract_mode = 'list'

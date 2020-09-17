@@ -14,7 +14,7 @@ from photonai_neuro.objects import NeuroTransformerMixin
 
 class SmoothImages(BaseEstimator, NeuroTransformerMixin):
     """
-    PipelineElemente to perform nilearns smooth_img function.
+    PipelineElement to perform nilearns smooth_img function.
 
     Parameter
     ---------
