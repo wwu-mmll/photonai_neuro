@@ -20,7 +20,7 @@ class BrainAtlas(BaseEstimator):
     * `atlas_name`: [str]:
         Name of specific Atlas. Possible values can be looked up in AtlasLibrary.
     * `extract_mode`: [str] - [default: 'vec']:
-        The mode performing on ROI. Possible values: ['vec', 'mean', 'box', 'img']
+        The mode performing on ROI. Possible values: ['vec', 'mean']
     * `mask_threshold`: [str]:
         Mask Threshold. value < mask_threshold => value = 0
     * `background_id`: [str]:
@@ -76,6 +76,7 @@ class BrainAtlas(BaseEstimator):
 
     def transform(self, X, y=None, **kwargs):
         """
+        Transform X by calculation of given atlas.
 
         :param X: input data
         :param y: targets
@@ -100,7 +101,8 @@ class BrainAtlas(BaseEstimator):
         atlas_obj = AtlasLibrary().get_atlas(self.atlas_name, self.affine, self.shape, self.mask_threshold)
         roi_objects = self._get_rois(atlas_obj, which_rois=self.rois, background_id=self.background_id)
 
-        roi_data = np.array([], dtype=np.int64).reshape(n_subjects, 0) if self.collection_mode == "concat" else [list() for _ in range(n_subjects)]
+        roi_data = np.array([], dtype=np.int64).reshape(n_subjects, 0) \
+            if self.collection_mode == "concat" else [list() for _ in range(n_subjects)]
         t1 = time.time()
 
         # convert to series and C ordering since this will speed up the masking process

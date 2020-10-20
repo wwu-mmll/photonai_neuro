@@ -261,7 +261,10 @@ class AtlasLibrary:
             logger.error(msg)
             raise ValueError(msg)
 
-        AtlasLibrary.LIBRARY[(mask_object.name, str(target_affine), str(target_shape), str(mask_threshold))] = mask_object
+        AtlasLibrary.LIBRARY[(mask_object.name,
+                              str(target_affine),
+                              str(target_shape),
+                              str(mask_threshold))] = mask_object
         logger.debug("BrainMask: Done adding mask to library!")
 
     @staticmethod

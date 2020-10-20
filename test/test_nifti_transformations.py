@@ -56,16 +56,17 @@ class SmoothImagesTests(NeuroBaseTest):
 
     def test_some_fwhm(self):
         for fwhm in [3, [2, 3, 2], None, 'fast']:
-            smoother = PipelineElement('SmoothImages', hyperparameters={}, fwhm=fwhm)
+            smoother = PipelineElement('SmoothImages', fwhm=fwhm)
             photon_smoothed_array, _, _ = smoother.transform(self.X[0])
             np.testing.assert_array_equal(photon_smoothed_array, smooth_img(self.X[0], fwhm=fwhm).dataobj)
 
         with warnings.catch_warnings(record=True) as w:
-            PipelineElement('SmoothImages', hyperparameters={}, fwhm=None)
-            assert any("the fwhm in SmoothImages is None" in s for s in [e.message.args[0] for e in w])
+            smoother = PipelineElement('SmoothImages', fwhm=None)
+            _ = smoother.transform(self.X[0])
+            assert any("The fwhm in SmoothImages is None" in s for s in [e.message.args[0] for e in w])
 
         with self.assertRaises(ValueError):
-            PipelineElement('SmoothImages', hyperparameters={}, fwhm="quick")
+            PipelineElement('SmoothImages', fwhm="quick")
 
 
 class ResampleImagesTests(NeuroBaseTest):

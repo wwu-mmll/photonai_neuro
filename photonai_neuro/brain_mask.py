@@ -79,7 +79,7 @@ class BrainMask(BaseEstimator):
 
     def inverse_transform(self, X, y=None, **kwargs):
         """
-        Inverse transform back to
+        Inverse transformation. Only available and well-defined for extract_mode == 'vec'.
 
         """
         if not self.extract_mode == 'vec':

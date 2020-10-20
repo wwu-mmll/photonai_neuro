@@ -56,7 +56,7 @@ class SmoothImages(BaseEstimator, NeuroTransformerMixin):
             self._fwhm = fwhm
         elif fwhm is None:
             self._fwhm = None
-            warn_msg = "the fwhm in SmoothImages is None, no filtering is performed (useful when just " \
+            warn_msg = "The fwhm in SmoothImages is None, no filtering is performed (useful when just " \
                        "removal of non-finite values is needed). "
             logger.warning(warn_msg)
             warnings.warn(warn_msg)
@@ -96,7 +96,10 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
         Indicates the output format. False -> np.ndarray,  True -> object (Nifti1Image).
 
     """
-    def __init__(self, voxel_size: Union[float, int, List] = 3, interpolation: str = 'nearest', output_img: bool = False):
+    def __init__(self,
+                 voxel_size: Union[float, int, List] = 3,
+                 interpolation: str = 'nearest',
+                 output_img: bool = False):
         super(ResampleImages, self).__init__(output_img=output_img)
         self._voxel_size = None
         self.voxel_size = voxel_size
@@ -222,7 +225,10 @@ class PatchImages(BaseEstimator, NeuroTransformerMixin):
         output_matrix = patches_drawn[0:patch_list_length:patch_size, 0:patch_list_width:patch_size, :, :]
 
         # TODO: Reshape First 3 Matrix Dimensions into 1, which will give 900 images
-        output_matrix = output_matrix.reshape((-1, output_matrix.shape[3], output_matrix.shape[4], output_matrix.shape[5]))
+        output_matrix = output_matrix.reshape((-1,
+                                               output_matrix.shape[3],
+                                               output_matrix.shape[4],
+                                               output_matrix.shape[5]))
         output_matrix = np.squeeze(output_matrix)
 
         return output_matrix

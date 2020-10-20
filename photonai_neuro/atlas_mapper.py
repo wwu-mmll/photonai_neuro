@@ -109,8 +109,8 @@ class AtlasMapper:
             hyperpipe.verbosity = self.hyperpipe.verbosity
             hyperpipe.fit(X_extracted[self.roi_indices[roi_name]], y, **kwargs)
             hyperpipe_infos[roi_name] = {'hyperpipe_name': hyperpipe.name,
-                                         'model_filename': os.path.join(os.path.basename(hyperpipe.output_settings.results_folder),
-                                                                        'photon_best_model.photon'),
+                                         'model_filename': os.path.join(os.path.basename(
+                                             hyperpipe.output_settings.results_folder), 'photon_best_model.photon'),
                                          'roi_index': self.roi_indices[roi_name]}
             hyperpipe_results[roi_name] = ResultsHandler(hyperpipe.results).get_performance_outer_folds()
 
@@ -158,8 +158,10 @@ class AtlasMapper:
         big_fsaverage = datasets.fetch_surf_fsaverage('fsaverage')
 
         cnt = 0
-        for hemi, infl, sulc, pial in [('left', big_fsaverage.infl_left, big_fsaverage.sulc_left, big_fsaverage.pial_left),
-                                        ('right', big_fsaverage.infl_right, big_fsaverage.sulc_right, big_fsaverage.pial_right)]:
+        for hemi, infl, sulc, pial in [('left', big_fsaverage.infl_left,
+                                        big_fsaverage.sulc_left, big_fsaverage.pial_left),
+                                       ('right', big_fsaverage.infl_right,
+                                        big_fsaverage.sulc_right, big_fsaverage.pial_right)]:
             print('Hemi {}'.format(hemi))
 
             big_texture = surface.vol_to_surf(perf_img, pial, interpolation='nearest')
@@ -230,7 +232,8 @@ class AtlasMapper:
             meta_file = glob(os.path.join(folder, '*_atlas_mapper_meta.json'))
 
         if len(meta_file) == 0:
-            raise FileNotFoundError("Couldn't find atlas_mapper_meta.json file in {}. Did you specify the correct analysis name?".format(folder))
+            raise FileNotFoundError("Couldn't find atlas_mapper_meta.json file in {}. "
+                                    "Did you specify the correct analysis name?".format(folder))
         elif len(meta_file) > 1:
             raise ValueError("Found multiple atlas_mapper_meta.json files in {}".format(folder))
 
