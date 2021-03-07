@@ -69,7 +69,7 @@ class BrainAtlasTests(NeuroBaseTest):
         rois = [roi.label for roi in rois]
         brain_atlas = BrainAtlas(atlas_name=atlas)
         brain_atlas.rois = rois
-        X_t = brain_atlas.transform(self.X[0:2])
+        X_t = brain_atlas.transform(self.X[:2])
 
         "-".join(rois)
         name = os.path.join(self.test_folder, atlas + '_' + "-".join(rois))

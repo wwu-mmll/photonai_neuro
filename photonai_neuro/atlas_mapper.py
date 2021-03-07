@@ -18,31 +18,27 @@ from photonai_neuro.neuro_branch import NeuroBranch
 
 
 class AtlasMapper:
-    """
-    Mapping between neuro processing and Hyperpipes for given regions of interest.
+    """Mapping between neuro processing and Hyperpipes for given regions of interest."""
 
-    Parameter
-    ---------
-    * `neuro_element` [Union[NeuroBranch, PipelineElement]]:
-        Neuro processing in front of hyperpipe.
+    def __init__(self, neuro_element: Union[NeuroBranch, PipelineElement], hyperpipe: Hyperpipe = None,
+                 folder: str = "./tmp/", create_surface_plots: bool = False):
+        """
+        Initialize the object.
 
-    * `hyperpipe` [photonai.base.Hyperpipe]
-        Hyperpipe to fit.
+        Parameters:
+            neuro_element:
+                Neuro processing in front of hyperpipe.
 
-    * `folder` [str]:
-        Output path for created hyperpipes and other results.
+            hyperpipe:
+                Hyperpipe to fit.
 
-    * `create_surface_plots` [bool]:
-        Enable/Disable plotting.
+            folder:
+                Output path for created hyperpipes and other results.
 
-    """
+            create_surface_plots:
+                Enable/Disable plotting.
 
-    def __init__(self,
-                 neuro_element: Union[NeuroBranch, PipelineElement],
-                 hyperpipe: Hyperpipe = None,
-                 folder: str = "./tmp/",
-                 create_surface_plots: bool = False):
-
+        """
         self.folder = folder
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)

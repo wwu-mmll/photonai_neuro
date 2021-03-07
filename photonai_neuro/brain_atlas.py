@@ -1,44 +1,43 @@
-from typing import Union
-import time
-
-import numpy as np
 from nilearn import image, masking, _utils
-from sklearn.base import BaseEstimator
+import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
+import time
+from typing import Union
 
 from photonai.photonlogger.logger import logger
-
-from photonai_neuro.objects import NiftiConverter
 from photonai_neuro.atlas_library import AtlasLibrary
+from photonai_neuro.objects import NiftiConverter
 
 
-class BrainAtlas(BaseEstimator):
+class BrainAtlas(BaseEstimator, TransformerMixin):
     """
     BrainAtlas is a transformer calculate brain atlases from input niftis.
 
-    Parameter
-    ---------
-    * `atlas_name`: [str]:
-        Name of specific Atlas. Possible values can be looked up in AtlasLibrary.
-    * `extract_mode`: [str] - [default: 'vec']:
-        The mode performing on ROI. Possible values: ['vec', 'mean']
-    * `mask_threshold`: [str]:
-        Mask Threshold. value < mask_threshold => value = 0
-    * `background_id`: [str]:
-        The background ID for ROI.
-
-    # ToDo
-        #   + check RAS vs. LPS view-type and provide warning
-        #  - unit tests
-        #  Later
-        #  - add support for overlapping ROIs and probabilistic atlases using 4d-nii
-        #  - add support for 4d resting-state data using nilearn
+    ToDo
+        + check RAS vs. LPS view-type and provide warning
+        - unit tests
+        Later
+        - add support for overlapping ROIs and probabilistic atlases using 4d-nii
+        - add support for 4d resting-state data using nilearn
     """
-    def __init__(self,
-                 atlas_name: str,
-                 extract_mode: str = 'vec',
-                 mask_threshold: float = None,
-                 background_id: int = 0,
-                 rois: Union[list, str] = 'all'):
+    def __init__(self, atlas_name: str, extract_mode: str = 'vec', mask_threshold: float = None,
+                 background_id: int = 0, rois: Union[list, str] = 'all'):
+        """
+        Initialize the object.
+
+        Parameters:
+            atlas_name:
+                Name of specific ytlas. Possible values can be looked up in the AtlasLibrary.
+
+            extract_mode:
+                The mode performing on ROI. Possible values: ['vec', 'mean'].
+
+            mask_threshold:
+                Mask Threshold. value < mask_threshold => value = 0.
+
+            background_id:
+                The background ID for ROI.
+        """
 
         self._extract_mode = None
 
@@ -74,16 +73,19 @@ class BrainAtlas(BaseEstimator):
     def fit(self, X, y):
         return self
 
-    def transform(self, X, y=None, **kwargs):
+    def transform(self, X: np.ndarray, y: np.ndarray = None, **kwargs) -> np.ndarray:
         """
-        Transform X by calculation of given atlas.
+        Transform X by applying the underlying atlas.
 
-        :param X: input data
-        :param y: targets
-        :param kwargs:
-        :return: roi_data: np.ndarray, ROIs data for given brain atlas in concat or list form.
+        Parameters:
+            X: input data
+            y: targets
+            **kwargs: -
+
+        Returns:
+            Data for each ROI for given brain atlas in concat or list form.
+
         """
-
         X, n_subjects = NiftiConverter.transform(X)
 
         if self.collection_mode == 'list' or self.collection_mode == 'concat':
@@ -150,7 +152,7 @@ class BrainAtlas(BaseEstimator):
         # Todo: consider extraction mode!
         return series[mask_img.dataobj.astype(bool)].T
 
-    def inverse_transform(self, X, y=None, **kwargs):
+    def inverse_transform(self, X: np.ndarray, y: np.ndarray = None, **kwargs):
         """
         Reconstruct image from transformed data.
 
@@ -175,7 +177,7 @@ class BrainAtlas(BaseEstimator):
             if self.collection_mode == 'list':
                 unmasked[mask_data] = X[i]
             else:
-                unmasked[mask_data] = X[self.mask_indices == i]
+                unmasked[mask_data] = X[self.mask_indices.reshape(X.shape) == i]
 
         new_image = image.new_img_like(atlas_obj.atlas, unmasked)
         return new_image

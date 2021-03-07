@@ -3,7 +3,7 @@ import numpy as np
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import KFold
 
-from photonai.base import Hyperpipe, PipelineElement, OutputSettings, Preprocessing
+from photonai.base import Hyperpipe, PipelineElement, Preprocessing
 from photonai_neuro import AtlasMapper, NeuroBranch
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -21,19 +21,14 @@ gender = dataset_files.ext_vars['mf'].astype(str)
 y = np.array(gender)
 X = np.array(dataset_files.gray_matter_maps)
 
-
-# YOU CAN SAVE THE TRAINING AND TEST RESULTS AND ALL THE PERFORMANCES IN THE MONGODB
-settings = OutputSettings(project_folder=results_folder)
-
-
 # DESIGN YOUR PIPELINE
 my_pipe = Hyperpipe('atlas_mapper_example',
                     optimizer='grid_search',
                     metrics=['accuracy'],
                     best_config_metric='accuracy',
                     inner_cv=KFold(n_splits=2),
-                    verbosity=2,
-                    output_settings=settings,
+                    verbosity=1,
+                    project_folder=results_folder,
                     cache_folder=cache_folder)
 
 preprocessing = Preprocessing()
@@ -66,5 +61,3 @@ atlas_mapper = AtlasMapper.load_from_folder(folder=results_folder, analysis_name
 #atlas_mapper.load_from_folder(folder=results_folder, analysis_name='atlas_mapper_example')
 print(atlas_mapper.predict(X))
 debug = True
-
-

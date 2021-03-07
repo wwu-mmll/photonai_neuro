@@ -2,7 +2,7 @@ import os
 import numpy as np
 from nibabel.nifti1 import Nifti1Image
 
-from photonai.base import ParallelBranch, CallbackElement, PhotonRegistry
+from photonai.base import ParallelBranch, CallbackElement, PhotonRegistry, PipelineElement
 from photonai.photonlogger.logger import logger
 
 from photonai_neuro.brain_atlas import BrainAtlas
@@ -15,32 +15,37 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
     transformations on MRI data. A NeuroBranch takes niftis or nifti paths as input and should pass a numpy array
     to the subsequent PipelineElements.
 
-    Parameters
-    ----------
-    * `name` [str]:
-        Name of the NeuroModule pipeline branch
-    * `nr_of_processes` [int, default=1]
-        Count of parallel processes.
-    * `output_img` [bool, default=False]
-        True -> return nifti object, False -> return np.ndarray (nifti.dataobj)
-
     """
-
     NEURO_ELEMENTS = PhotonRegistry().get_package_info(['photonai_neuro'])
 
-    def __init__(self, name, nr_of_processes: int = 1, output_img: bool = False):
+    def __init__(self, name: str, nr_of_processes: int = 1, output_img: bool = False):
+        """
+        Initialize the object
+
+        Parameters:
+            name:
+                Name of the NeuroModule pipeline branch.
+
+            nr_of_processes:
+                Count of parallel processes.
+
+            output_img:
+                True -> return nifti object, False -> return np.ndarray (nifti.dataobj).
+
+        """
         ParallelBranch.__init__(self, name, nr_of_processes=nr_of_processes)
         NeuroTransformerMixin.__init__(self, output_img=output_img)
 
-    def __iadd__(self, pipe_element):
+    def __iadd__(self, pipe_element: PipelineElement):
         """
         Add an element to the neuro branch. Only neuro pipeline elements are allowed.
-        Returns self
 
-        Parameters
-        ----------
-        * `pipe_element` [PipelineElement]:
-            The transformer object to add. Should be registered in the Neuro module.
+        Parameters:
+            pipe_element:
+                The transformer object to add. Should be registered in the neuro module or Callback.
+
+        Returns:
+            self
 
         """
         if pipe_element.name in NeuroBranch.NEURO_ELEMENTS:
@@ -54,10 +59,9 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
             msg = 'PipelineElement {} is not part of the Neuro module:'.format(pipe_element.name)
             logger.error(msg)
             raise ValueError(msg)
-
         return self
 
-    def test_transform(self, X, nr_of_tests=1, save_to_folder='.', **kwargs):
+    def test_transform(self, X, nr_of_tests: int = 1, save_to_folder='.', **kwargs):
 
         if kwargs and len(kwargs) > 0:
             self.set_params(**kwargs)

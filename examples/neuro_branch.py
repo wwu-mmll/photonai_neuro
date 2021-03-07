@@ -4,7 +4,7 @@ import numpy as np
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import ShuffleSplit
 
-from photonai.base import Hyperpipe, PipelineElement, OutputSettings, CallbackElement, Branch
+from photonai.base import Hyperpipe, PipelineElement, CallbackElement, Branch
 from photonai_neuro import NeuroBranch
 from photonai.optimization import Categorical
 
@@ -24,10 +24,6 @@ age = dataset_files.ext_vars['age'].astype(float)
 y = np.array(age)
 X = np.array(dataset_files.gray_matter_maps)
 
-
-# DESIGN YOUR PIPELINE
-settings = OutputSettings(project_folder='./tmp/', overwrite_results=True)
-
 my_pipe = Hyperpipe('Limbic_Pipeline',
                     optimizer='grid_search',
                     metrics=['mean_absolute_error'],
@@ -36,7 +32,7 @@ my_pipe = Hyperpipe('Limbic_Pipeline',
                     inner_cv=ShuffleSplit(n_splits=2, test_size=0.2),
                     verbosity=1,
                     cache_folder="./cache",
-                    output_settings=settings)
+                    project_folder='./tmp/')
 
 # CREATE NEURO BRANCH
 # specify the number of processes that should be used
@@ -58,12 +54,10 @@ neuro_branch += PipelineElement('BrainAtlas', hyperparameters={},
 # finally, add your neuro branch to your hyperpipe
 neuro_branch += CallbackElement('NeuroCallback', my_monitor)
 my_pipe += neuro_branch
-# my_pipe += CallbackElement('NeuroCallback', my_monitor)
 
 # now, add standard ML algorithms to your liking
 feature_engineering = Branch('FeatureEngineering')
 feature_engineering += PipelineElement('StandardScaler')
-
 
 my_pipe += feature_engineering
 my_pipe += CallbackElement('FECallback', my_monitor)
@@ -74,7 +68,3 @@ start_time = time.time()
 my_pipe.fit(X, y)
 elapsed_time = time.time() - start_time
 print(time.strftime("%H:%M:%S", time.gmtime(elapsed_time)))
-
-debug = True
-
-

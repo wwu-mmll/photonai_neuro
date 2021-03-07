@@ -3,13 +3,12 @@ import numpy as np
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import ShuffleSplit
 
-from photonai.base import Hyperpipe, PipelineElement, OutputSettings
+from photonai.base import Hyperpipe, PipelineElement
 from photonai_neuro import NeuroBranch
 from photonai_neuro.brain_atlas import AtlasLibrary
 from photonai.processing import ResultsHandler
 
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-
 
 # GET DATA FROM OASIS
 n_subjects = 50
@@ -18,21 +17,16 @@ age = dataset_files.ext_vars['age'].astype(float)
 y = np.array(age)
 X = np.array(dataset_files.gray_matter_maps)
 
-
-# DEFINE OUTPUT SETTINGS
-settings = OutputSettings(project_folder='./tmp/')
-
-# DESIGN YOUR PIPELINE
 pipe = Hyperpipe('Limbic_System',
                  optimizer='grid_search',
-                 metrics=['mean_absolute_error'],
+                 metrics=['mean_absolute_error', 'mean_squared_error'],
                  best_config_metric='mean_absolute_error',
-                 outer_cv=ShuffleSplit(n_splits=1, test_size=0.2),
-                 inner_cv=ShuffleSplit(n_splits=1, test_size=0.2),
-                 verbosity=2,
+                 outer_cv=ShuffleSplit(n_splits=2, test_size=0.2),
+                 inner_cv=ShuffleSplit(n_splits=2, test_size=0.2),
+                 verbosity=1,
                  cache_folder="./cache",
-                 eval_final_performance=True,
-                 output_settings=settings)
+                 use_test_set=True,
+                 project_folder='./tmp/')
 
 """
 AVAILABLE ATLASES
@@ -60,13 +54,10 @@ atlas = PipelineElement('BrainAtlas',
 neuro_branch = NeuroBranch('NeuroBranch')
 neuro_branch += atlas
 
-
 # ADD NEURO ELEMENTS TO HYPERPIPE
-
 pipe += neuro_branch
 
 pipe += PipelineElement('LinearSVR')
-
 pipe.fit(X, y)
 
 # GET IMPORTANCE SCORES
@@ -80,5 +71,3 @@ importance_scores_optimum_pipe = handler.results.best_config_feature_importances
 img, _, _ = pipe.optimum_pipe.inverse_transform(importance_scores_optimum_pipe, None)
 img.to_filename('./tmp/best_config_feature_importances.nii.gz')
 debug = True
-
-

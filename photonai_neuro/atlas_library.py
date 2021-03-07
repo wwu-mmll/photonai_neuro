@@ -16,8 +16,7 @@ from photonai_neuro.objects import MaskObject, AtlasObject, RoiObject
 
 
 class AtlasLibrary:
-    """AtlasLibrary
-
+    """
     The AtlasLibrary manages access to Atlases on hard drive and memory.
     Every access follows the scheme:
         1. load into RAM to dictonary LIBRARY with (name, affine, shape, threshold) as key
@@ -75,19 +74,21 @@ class AtlasLibrary:
         Read access to LIBRARY. Search for key (name, affine, shape, threshold).
         If key is set, return the suitable value, else add/return new AtlasObject to/from LIBRARY.
 
-        Parameter
-        ---------
-        atlas_name: str
-            Name of atlas.
-        target_affine: np.ndarray
-            If specified, the atlas-image is resampled corresponding to this new affine.
-            target_affine can be a 3x3 or a 4x4 matrix.
-        target_shape: Union[list, tuple]
-            If specified, the atlas-image will be resized to match this new shape.
-            len(target_shape) must be equal to 3.
-            If target_shape is specified, a target_affine of shape (4, 4) must also be given.
-        mask_threshold: float
-            Threshold for defining background.
+        Parameters:
+            atlas_name:
+                Name of atlas.
+
+            target_affine:
+                If specified, the atlas-image is resampled corresponding to this new affine.
+                target_affine can be a 3x3 or a 4x4 matrix.
+
+            target_shape:
+                If specified, the atlas-image will be resized to match this new shape.
+                len(target_shape) must be equal to 3.
+                If target_shape is specified, a target_affine of shape (4, 4) must also be given.
+
+            mask_threshold:
+                Threshold for defining background.
 
         """
         if (atlas_name, str(target_affine), str(target_shape), str(mask_threshold)) not in \
@@ -104,19 +105,22 @@ class AtlasLibrary:
         """
         Mask equivalent to get_atlas. Add to LIBRARY if not exists and returns.
 
-        Parameter
-        ---------
-        atlas_name: str
-            Name of atlas.
-        target_affine: np.ndarray
-            If specified, the atlas-image is resampled corresponding to this new affine.
-            target_affine can be a 3x3 or a 4x4 matrix.
-        target_shape: Union[list, tuple]
-            If specified, the atlas-image will be resized to match this new shape.
-            len(target_shape) must be equal to 3.
-            If target_shape is specified, a target_affine of shape (4, 4) must also be given.
-        mask_threshold: float
-            Threshold for defining background.
+        Parameters:
+            atlas_name:
+                Name of atlas.
+
+            target_affine:
+                If specified, the atlas-image is resampled corresponding to this new affine.
+                target_affine can be a 3x3 or a 4x4 matrix.
+
+            target_shape:
+                If specified, the atlas-image will be resized to match this new shape.
+                len(target_shape) must be equal to 3.
+                If target_shape is specified, a target_affine of shape (4, 4) must also be given.
+
+            mask_threshold:
+                Threshold for defining background.
+
         """
         if (mask_name, str(target_affine), str(target_shape)) not in AtlasLibrary.LIBRARY:
             self._add_mask_to_library(mask_name, target_affine, target_shape, mask_threshold)

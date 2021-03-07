@@ -1,5 +1,6 @@
 import numpy as np
 from typing import Union, Tuple
+from sklearn.base import BaseEstimator, TransformerMixin
 from nilearn import image
 from nibabel.nifti1 import Nifti1Image
 
@@ -10,8 +11,8 @@ class NiftiConverter:
     """
     Handle transformation for different inputs to homogeneous output.
     Output is a Nifti1Image object and the count of subjects (4th dimension).
-    """
 
+    """
     @classmethod
     def transform(cls, X: Union[list, np.ndarray, Nifti1Image, str]) -> Tuple[Nifti1Image, int]:
         n_subjects = 1
@@ -47,13 +48,11 @@ class NiftiConverter:
         """
         Return Affine and Shape of first image.
 
-        Parameter
-        ---------
-        * `X` [Union[list, np.ndarray, Nifti1Image, str]]:
-            Input data - return only affine and shape of first image.
+        Parameter:
+            X:
+                Input data - return only affine and shape of first image.
 
         """
-
         img, n_subjects = NiftiConverter.transform(X)
         if n_subjects > 1:
             img = img.slicer[:, :, :, 0]
@@ -76,22 +75,27 @@ class RoiObject:
     The ROI known as `label` with size `size` defined by the index in the mask.
     Every ROI got an unique index stored in an mask object.
 
-    Parameter
-    ---------
-    * `index` [int]:
-        Unique index for label and mask.
-    * `label` [str]:
-        Label of region of interest (ROI).
-    * `size` [int]:
-        Size of positiv voxels in mask.
-    * `mask` []:
-        Mask containing ROI indeces.
-
     For later versions: Performance advantage if all ROI objects save references of mask
     and the property roi_mask returns the applied index on mask.
 
     """
     def __init__(self, index: int, label: str = '', size: int = None, mask=None):
+        """
+        Inizialize the object.
+
+        Parameters:
+            index:
+                Unique index for label and mask.
+
+            label:
+                Label of region of interest (ROI).
+
+            size:
+                Size of positiv voxels in mask.
+
+            mask:
+                Mask containing ROI indeces.
+        """
         self.index = index
         self.label = label
         self.mask = mask
@@ -103,15 +107,17 @@ class NeuroTransformerMixin:
     """
     Abstract class for objects with possible output NiftiImage/np.ndarray.
 
-    Parameter
-    ---------
-    * `output_img` [bool, default: False]:
-        True -> return is instance of NiftiImage
-        False -> return is instance of np.ndarray (nii.dataobj)
-
     """
-
     def __init__(self, output_img: bool = False):
+        """
+        Initialize the object.
+
+        Parameters:
+            output_img:
+                True -> return is instance of NiftiImage,
+                False -> return is instance of np.ndarray (nii.dataobj).
+
+        """
         self.output_img = output_img
 
 
@@ -151,3 +157,31 @@ class AtlasObject:
         self.shape = shape
 
         self.rois_available = []
+
+class RoiFilter(BaseEstimator, TransformerMixin):
+
+    def __init__(self, roi_allocation: dict, mask_indices: Union[np.ndarray, list], rois=[]):
+        self.roi_allocation = roi_allocation
+        self.mask_indices = mask_indices
+        self._rois = None
+        self.rois = rois
+
+    @property
+    def rois(self):
+        return self._rois
+
+    @rois.setter
+    def rois(self, value):
+        if isinstance(value, str):
+            self._rois = [value]
+        else:
+            self._rois = value
+        self.rois_indices = [self.roi_allocation[roi] for roi in self.rois]
+        self.filter_indices = np.array([True if x in self.rois_indices else False for x in self.mask_indices])
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X, y=None, **kwargs):
+        return_data = X[:, self.filter_indices]
+        return return_data

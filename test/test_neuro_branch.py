@@ -20,8 +20,8 @@ class NeuroBranchTests(NeuroBaseTest):
             2. Testing Method on Multi Core
             3. Testing Method on Single Core Batched
             4. Testing Method on Multi Core Batched
-        """
 
+        """
         def create_instances_and_transform(neuro_class_str, param_dict, transformed_X):
 
             for i in range(4):

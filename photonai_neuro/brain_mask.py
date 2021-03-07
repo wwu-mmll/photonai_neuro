@@ -17,12 +17,9 @@ class BrainMask(BaseEstimator):
     Transform based on given mask image.
     """
 
-    def __init__(self,
-                 mask_image: Union[str, RoiObject, None] = 'MNI_ICBM152_WholeBrain',
-                 affine: Union[np.ndarray, None] = None,
-                 shape: Union[tuple, list, None] = None,
-                 mask_threshold: Union[float, None] = 0.5,
-                 extract_mode: str = 'vec'):
+    def __init__(self, mask_image: Union[str, RoiObject, None] = 'MNI_ICBM152_WholeBrain',
+                 affine: Union[np.ndarray, None] = None, shape: Union[tuple, list, None] = None,
+                 mask_threshold: Union[float, None] = 0.5, extract_mode: str = 'vec'):
         self.mask_image = mask_image
 
         self.affine = affine

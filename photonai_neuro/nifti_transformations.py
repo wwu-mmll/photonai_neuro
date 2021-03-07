@@ -16,24 +16,25 @@ class SmoothImages(BaseEstimator, NeuroTransformerMixin):
     """
     PipelineElement to perform nilearns smooth_img function.
 
-    Parameter
-    ---------
-    * `fwhm`: Union[int, list, str] - [default: 2]
-        Smoothing strength, as a Full-Width at Half Maximum, in millimeters.
-        If a scalar is given, width is identical on all three directions.
-        A numpy.ndarray must have 3 elements, giving the FWHM along each axis.
-        If fwhm == ‘fast’, a fast smoothing will be performed with a filter [0.2, 1, 0.2]
-        in each direction and a normalisation to preserve the scale.
-        If fwhm is None, no filtering is performed (useful when just removal of non-finite values is needed).
-        * cited from nilearn: https://nilearn.github.io/modules/generated/nilearn.image.smooth_img.html
-
-    * `output_img`: bool - [default: False]
-        Indicates the output format. False -> array,  True -> object (Nifti1Image).
-
     """
-
     def __init__(self, fwhm: Union[int, List, str] = 2, output_img: bool = False):
+        """
+        Initialize the object.
 
+        Parameters:
+            fwhm:
+                Smoothing strength, as a Full-Width at Half Maximum, in millimeters.
+                If a scalar is given, width is identical on all three directions.
+                A numpy.ndarray must have 3 elements, giving the FWHM along each axis.
+                If fwhm == ‘fast’, a fast smoothing will be performed with a filter [0.2, 1, 0.2]
+                in each direction and a normalisation to preserve the scale.
+                If fwhm is None, no filtering is performed (useful when just removal of non-finite values is needed).
+                * cited from nilearn: https://nilearn.github.io/modules/generated/nilearn.image.smooth_img.html
+
+            output_img:
+                Indicates the output format. False -> array,  True -> object (Nifti1Image).
+
+        """
         super(SmoothImages, self).__init__(output_img=output_img)
 
         self._fwhm = None
@@ -85,21 +86,22 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
      Resampling voxel size based on nilearns resample_img function.
      This object creates the target_affine = np.diag(voxel_size) as 3x3 matrix.
 
-    Parameter
-    ---------
-    * `voxel_size`: Union[int, List] - [default: 3]
-        Value to create target_affine matrix for resmapled_img function.
-        Length of list has to be in [3, 4].
-    * `interpolation`: str - [default: 'nearest']
-        Set the resample method.
-    * `output_img`: bool - [default: False]
-        Indicates the output format. False -> np.ndarray,  True -> object (Nifti1Image).
-
     """
-    def __init__(self,
-                 voxel_size: Union[float, int, List] = 3,
-                 interpolation: str = 'nearest',
+    def __init__(self, voxel_size: Union[float, int, List] = 3, interpolation: str = 'nearest',
                  output_img: bool = False):
+        """
+        Initialize the object.
+
+        Parameters:
+            voxel_size:
+                Value to create target_affine matrix for resmapled_img function.
+                Length of list has to be in [3, 4].
+            interpolation:
+                Set the resample method.
+            output_img:
+                Indicates the output format. False -> np.ndarray,  True -> object (Nifti1Image).
+
+        """
         super(ResampleImages, self).__init__(output_img=output_img)
         self._voxel_size = None
         self.voxel_size = voxel_size
@@ -118,7 +120,7 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
         if value in ['continuous', 'linear', 'nearest']:
             self._interpolation = value
         else:
-            msg = "Got unexpected interpolation. Please use one of ['continuous', 'linear' 'nearest']"
+            msg = "Got unexpected interpolation. Please use one of ['continuous', 'linear' 'nearest']."
             logger.error(msg)
             raise NameError(msg)
 

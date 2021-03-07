@@ -1,10 +1,9 @@
-import warnings
 import os
 import numpy as np
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import KFold
 
-from photonai.base import Hyperpipe, PipelineElement, OutputSettings, Preprocessing
+from photonai.base import Hyperpipe, PipelineElement, Preprocessing
 from photonai_neuro import AtlasMapper, NeuroBranch
 from test.test_neuro import NeuroBaseTest
 
@@ -14,7 +13,6 @@ class AtlasMapperTests(NeuroBaseTest):
     def create_hyperpipe(self):
         results_folder = self.tmp_folder_path
         cache_folder = self.cache_folder_path
-        settings = OutputSettings(project_folder=results_folder)
 
         my_pipe = Hyperpipe('atlas_mapper_example',
                             optimizer='grid_search',
@@ -22,7 +20,7 @@ class AtlasMapperTests(NeuroBaseTest):
                             best_config_metric='accuracy',
                             inner_cv=KFold(n_splits=2),
                             verbosity=0,
-                            output_settings=settings,
+                            project_folder=results_folder,
                             cache_folder=cache_folder)
 
         preprocessing = Preprocessing()
