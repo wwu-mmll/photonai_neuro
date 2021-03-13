@@ -62,8 +62,8 @@ class SmoothImagesTests(NeuroBaseTest):
 
         with warnings.catch_warnings(record=True) as w:
             smoother = PipelineElement('SmoothImages', fwhm=None)
-            _ = smoother.transform(self.X[0])
-            assert any("The fwhm in SmoothImages is None" in s for s in [e.message.args[0] for e in w])
+            _ = smoother.transform(self.X[:2])
+            assert any("The fwhm in SmoothImages is" in s for s in [e.message.args[0] for e in w])
 
         with self.assertRaises(ValueError):
             PipelineElement('SmoothImages', fwhm="quick")

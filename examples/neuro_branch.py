@@ -18,7 +18,7 @@ def my_monitor(X, y=None, **kwargs):
 
 
 # GET DATA FROM OASIS
-n_subjects = 50
+n_subjects = 400
 dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
 age = dataset_files.ext_vars['age'].astype(float)
 y = np.array(age)
@@ -36,7 +36,7 @@ my_pipe = Hyperpipe('Limbic_Pipeline',
 
 # CREATE NEURO BRANCH
 # specify the number of processes that should be used
-neuro_branch = NeuroBranch('NeuroBranch', nr_of_processes=1)
+neuro_branch = NeuroBranch('NeuroBranch', nr_of_processes=2)
 
 # resample images to a desired voxel size - this also works with voxel_size as hyperparameter
 # it's also very reasonable to define a batch size for a large number of subjects

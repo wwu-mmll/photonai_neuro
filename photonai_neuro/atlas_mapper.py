@@ -54,10 +54,7 @@ class AtlasMapper:
         self.create_surface_plots = create_surface_plots
 
     def _generate_mappings(self):
-        """
-        Generator creates dicts of hyperpipes by key roi_name.
-        :return: _
-        """
+        """Generator creates dicts of hyperpipes by key roi_name."""
         for roi_index, roi_name in enumerate(self.rois):
             self.roi_indices[roi_name] = roi_index
             copy_of_hyperpipe = self.hyperpipe.copy_me()
@@ -69,20 +66,22 @@ class AtlasMapper:
             self.hyperpipes_to_fit[roi_name] = copy_of_hyperpipe
         return
 
-    def fit(self, X, y=None, **kwargs):
+    def fit(self, X: np.ndarray, y: Union[np.ndarray, None] = None, **kwargs):
         """
         Transform data on NeuroElement and fit hyperpipes.
         :param X: input data
         :param y: targets
         :param kwargs:
-        :return:
-        """
 
+        Returns:
+            self
+
+        """
         # disable fitting with loading from file/folder
         if not self.hyperpipes_to_fit and self.hyperpipe:
             self._generate_mappings()
         else:
-            msg = "Cannot fit AtlasMapper with hyperpipe as NoneType."
+            msg = "Cannot fit AtlasMapper with Hyperpipe as NoneType."
             logger.error(msg)
             raise ValueError(msg)
 
@@ -130,10 +129,11 @@ class AtlasMapper:
 
         if self.create_surface_plots:
             self.surface_plots(backmapped_img)
+        return self
 
-    def predict(self, X, **kwargs):
+    def predict(self, X: np.ndarray, **kwargs):
         if len(self.hyperpipes_to_fit) == 0:
-            msg = "No hyperpipes to predict. Did you remember to fit or load the Atlas Mapper?"
+            msg = "No hyperpipes to predict. Did you remember to fit or load the AtlasMapper?"
             logger.error(msg)
             raise Exception(msg)
 
@@ -177,11 +177,7 @@ class AtlasMapper:
 
     @staticmethod
     def _find_brain_atlas(neuro_element: Union[NeuroBranch, PipelineElement]):
-        """
-        Find BrainAtlas and returns its rois and atlas_object.
-        :param neuro_element: NeuroElement
-        :return: (roi_list, atlas_obj)
-        """
+        """Find BrainAtlas and returns its rois and atlas_object."""
         roi_list = list()
         atlas_obj = list()
         if isinstance(neuro_element, NeuroBranch):
@@ -207,14 +203,14 @@ class AtlasMapper:
         for roi_i in range(len(X[0])):
             for sub_i in range(len(X)):
                 roi_data[roi_i].append(X[sub_i][roi_i])
-
         return roi_data
 
     @staticmethod
     def load_from_file(file: str):
         if not os.path.exists(file):
-            raise FileNotFoundError("Couldn't find atlas mapper meta file")
-
+            msg = "Could not find the atlas-mapper meta file."
+            logger.error(msg)
+            raise FileNotFoundError(msg)
         return AtlasMapper._load(file)
 
     @staticmethod

@@ -1,6 +1,7 @@
 import os
 import numpy as np
 from nibabel.nifti1 import Nifti1Image
+from typing import Union
 
 from photonai.base import ParallelBranch, CallbackElement, PhotonRegistry, PipelineElement
 from photonai.photonlogger.logger import logger
@@ -11,7 +12,7 @@ from photonai_neuro.nifti_transformations import NeuroTransformerMixin
 
 class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
     """
-    A substream of neuro elements that are encapsulated into a single block of PipelineElements that all perform
+    A substream of neuro elements that are encapsulated into a single block of PipelineElements to perform
     transformations on MRI data. A NeuroBranch takes niftis or nifti paths as input and should pass a numpy array
     to the subsequent PipelineElements.
 
@@ -42,7 +43,7 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
 
         Parameters:
             pipe_element:
-                The transformer object to add. Should be registered in the neuro module or Callback.
+                The transformer object to add. Should be registered in the neuro module or be a Callback.
 
         Returns:
             self
@@ -56,13 +57,29 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
         elif isinstance(pipe_element, CallbackElement):
             super(NeuroBranch, self).__iadd__(pipe_element)
         else:
-            msg = 'PipelineElement {} is not part of the Neuro module:'.format(pipe_element.name)
+            msg = 'PipelineElement {} is not part of the PHOTONAI Neuro module.'.format(pipe_element.name)
             logger.error(msg)
             raise ValueError(msg)
         return self
 
-    def test_transform(self, X, nr_of_tests: int = 1, save_to_folder='.', **kwargs):
+    def test_transform(self, X: np.ndarray, nr_of_tests: int = 1, save_to_folder: str = '.', **kwargs):
+        """
+        Apply a transform on a test subset for nr_of_tests samples.
 
+        Parameters:
+            X:
+                The input samples as Niimg-like object of shape (n_samples, 1).
+
+            nr_of_tests:
+                Number of objects to be tested.
+
+            save_to_folder:
+                Path for saving the transformations.
+
+            **kwargs:
+                Passed to to the self.set_params.
+
+        """
         if kwargs and len(kwargs) > 0:
             self.set_params(**kwargs)
         copy_of_me = self.copy_me()
@@ -80,16 +97,33 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
 
         for i, new_pic in enumerate(new_pics):
             if not isinstance(new_pic, Nifti1Image):
-                msg = "The test_transform function in NeuroBranch is only build for nifti file output." + \
-                      str(self.elements[-1]) + " does not return a nifti image."
+                msg = "The test_transform function in NeuroBranch is only build for nifti file output. " \
+                      "{} does not return a nifti image.".format(str(self.elements[-1]))
                 logger.error(msg)
                 raise ValueError(msg)
 
             new_filename = os.path.join(save_to_folder, filename + str(i) + "_transformed.nii")
             new_pic.to_filename(new_filename)
 
-    def transform(self, X, y=None, **kwargs):
+    def transform(self, X: np.ndarray, y: Union[None, np.ndarray] = None, **kwargs) -> (np.ndarray, np.ndarray, dict):
+        """
+        Apply transformation.
 
+        Parameters:
+            X:
+                The input samples as Niimg-like object of shape (n_samples, 1).
+
+            y:
+                The input targets of shape (n_samples, 1).
+                Not used in this transform.
+
+            **kwargs:
+                Passed to to the elements.
+
+        Returns:
+            Output of the last Branch-element.
+
+        """
         X_new, y, kwargs = super(NeuroBranch, self).transform(X, y, **kwargs)
 
         # check if we have a list of niftis, should avoid this, except when output_image = True

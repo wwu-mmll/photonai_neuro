@@ -18,10 +18,11 @@ from photonai_neuro.objects import MaskObject, AtlasObject, RoiObject
 class AtlasLibrary:
     """
     The AtlasLibrary manages access to Atlases on hard drive and memory.
+
     Every access follows the scheme:
         1. load into RAM to dictonary LIBRARY with (name, affine, shape, threshold) as key
-            and utils.AtlasObject as value
-        2. Provide entrence to LIBRARY via get_atlas
+            and utils.AtlasObject as value.
+        2. Provide entrance to LIBRARY via get_atlas.
 
     """
     ATLAS_DICTIONARY = {'AAL': 'AAL.nii.gz',
@@ -106,8 +107,8 @@ class AtlasLibrary:
         Mask equivalent to get_atlas. Add to LIBRARY if not exists and returns.
 
         Parameters:
-            atlas_name:
-                Name of atlas.
+            mask_name:
+                Name of mask.
 
             target_affine:
                 If specified, the atlas-image is resampled corresponding to this new affine.
@@ -129,11 +130,17 @@ class AtlasLibrary:
 
     def list_rois(self, atlas: str):
         """
-        ROI listing of specific atlas
-        :param atlas: str, atlas name
-        :return: roi_names: list, list of ROIs
+        ROI listing of specific atlas.
+
+        Parameters:
+            atlas:
+                Name of atlas.
+
+        Returns:
+            List of all ROIs for given Atlas.
 
         ToDo: Check if custom ATLAS should warn, too.
+
         """
         if atlas not in self.ATLAS_DICTIONARY.keys():
             msg = 'Atlas {} is not supported.'.format(atlas)
@@ -249,7 +256,10 @@ class AtlasLibrary:
         mask_object = MaskObject(name=mask_name, mask_file=original_mask_object.mask_file)
 
         #mask_object.mask = image.threshold_img(mask_object.mask_file, threshold=mask_threshold)
-        mask_object.mask = image.math_img('img > {}'.format(mask_threshold), img=mask_object.mask_file)
+        if mask_threshold is not None:
+            mask_object.mask = image.math_img('img > {}'.format(mask_threshold), img=mask_object.mask_file)
+        else:
+            mask_object.mask = image.threshold_img(mask_object.mask_file, threshold=1.0)
 
         if target_affine is not None and target_shape is not None:
             mask_object.mask = image.resample_img(mask_object.mask,
@@ -261,7 +271,7 @@ class AtlasLibrary:
         # check if roi is empty
         if np.sum(mask_object.mask.dataobj != 0) == 0:
             mask_object.is_empty = True
-            msg = 'No voxels in mask after resampling (' + mask_object.name + ').'
+            msg = 'No voxels in mask after resampling ( {} ).'.format(mask_object.name)
             logger.error(msg)
             raise ValueError(msg)
 
@@ -283,7 +293,10 @@ class AtlasLibrary:
     def _load_photon_masks(self) -> dict:
         """
         Intern function for creating MaskObjects for every available Mask in the MASK_DICTIONARY.
-        :return: photon_masks: dict, Mask by mask_id
+
+        Returns:
+            Mask by mask_id.
+
         """
         dir_atlases = path.join(path.dirname(inspect.getfile(AtlasLibrary)), 'atlases')
         photon_masks = dict()
@@ -295,7 +308,10 @@ class AtlasLibrary:
     def _load_photon_atlases(self) -> dict:
         """
         Intern function for creating AtlasObjects for every available Atlas in the ATLAS_DICTIONARY.
-        :return: photon_atlases: dict, dict atlas by atlas_id
+
+        Returns:
+            Dict atlas by atlas_id.
+
         """
         dir_atlases = path.join(path.dirname(inspect.getfile(AtlasLibrary)), 'atlases')
         photon_atlases = dict()
@@ -312,8 +328,8 @@ class AtlasLibrary:
         orient_data = ''.join(nib.aff2axcodes(target_affine))
         orient_roi = ''.join(nib.aff2axcodes(mask.affine))
         if not orient_roi == orient_data:
-            msg = 'Orientation of mask and data are not the same: ' + \
-                  orient_roi + ' (mask) vs. ' + orient_data + ' (data)'
+            msg = 'Orientation of mask and data are not the same: ' \
+                  '{0} (mask) vs. {1} (data)'.format(orient_roi, orient_data)
             logger.error(msg)
             raise ValueError(msg)
         return True
@@ -344,9 +360,17 @@ class AtlasLibrary:
     def find_rois_by_label(atlas_obj: AtlasObject, query_list: list) -> list:
         """
         Returns all ROIs of given AtlasObject with roi_label in query_list.
-        :param atlas_obj: AtlasObject, the object we are searching in
-        :param query_list: serach after the ROI labels
-        :return:
+
+        Parameters:
+            atlas_obj:
+                AtlasObject, the object we are searching in
+
+            query_list:
+                Serach of ROI labels.
+
+        Returns:
+            List of ROI-lists for given label.
+
         """
         return [i for i in atlas_obj.roi_list if i.label in query_list]
 
@@ -354,18 +378,20 @@ class AtlasLibrary:
     def find_rois_by_index(atlas_obj: AtlasObject, query_list: list) -> list:
         """
         Returns all ROIs of given AtlasObject with roi_index in query_list.
-        :param atlas_obj: AtlasObject, the object we are searching in
-        :param query_list: serach after the ROI index
-        :return:
+
+        Parameters:
+            atlas_obj:
+                AtlasObject, the object we are searching in.
+
+            query_list:
+                Search list of indices.
+
+        Returns:
+            List of ROI-lists for given index.
         """
         return [i for i in atlas_obj.roi_list if i.index in query_list]
 
     @staticmethod
     def _get_nii_files_from_folder(folder_path: str, extension: str=".nii.gz"):
-        """
-        Returns all file with given extension in folder path.
-        :param folder_path: str, path to folder
-        :param extension: str, file extension
-        :return: _: list
-        """
+        """Returns all file with given extension in folder path."""
         return glob.glob(folder_path + '*' + extension)

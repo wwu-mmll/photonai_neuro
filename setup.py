@@ -17,7 +17,7 @@ setup(
 PHOTONAI NEURO
 The Neuro Module enables loading and preprocessing neuroimaging data such as structural and 
 functional Magnetic Resonance Imaging (MRI) data. 
-In addition, it supports a range of advanced feature extraction and feature engineering as well as atlas-based analyses 
+In addition, it supports a range of advanced feature extraction and feature engineering as well as atlas-based analyses. 
 """,
     author='PHOTONAI Team',
     author_email='hahnt@wwu.de',

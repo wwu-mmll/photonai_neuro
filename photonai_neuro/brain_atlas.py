@@ -91,8 +91,8 @@ class BrainAtlas(BaseEstimator, TransformerMixin):
         if self.collection_mode == 'list' or self.collection_mode == 'concat':
             collection_mode = self.collection_mode
         else:
-            msg = "Collection mode {} not supported. Use 'list' or 'concat' instead." +\
-                           "Falling back to concat mode.".format(self.collection_mode)
+            msg = "Collection mode {} not supported. Use 'list' or 'concat' instead." \
+                  "Falling back to concat mode.".format(self.collection_mode)
             logger.error(msg)
             raise ValueError(msg)
 
@@ -116,7 +116,7 @@ class BrainAtlas(BaseEstimator, TransformerMixin):
         for i, roi in enumerate(roi_objects):
             self.roi_allocation[roi.label] = i
 
-            logger.debug("Extracting ROI {}".format(roi.label))
+            logger.debug("Extracting ROI {}.".format(roi.label))
             # simply call apply_mask to extract one roi
             extraction = self.apply_mask(series, roi.mask)
 

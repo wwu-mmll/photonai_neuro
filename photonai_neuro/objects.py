@@ -1,8 +1,8 @@
-import numpy as np
-from typing import Union, Tuple
-from sklearn.base import BaseEstimator, TransformerMixin
-from nilearn import image
 from nibabel.nifti1 import Nifti1Image
+from nilearn import image
+import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
+from typing import Union, Tuple
 
 from photonai.photonlogger.logger import logger
 
@@ -35,7 +35,7 @@ class NiftiConverter:
         elif isinstance(X, Nifti1Image):
             load_data = X
         else:
-            msg = "Can only process strings as file paths to nifti images or nifti image object"
+            msg = "Can only process strings as file paths to nifti images or nifti image objects."
         if msg:
             logger.error(msg)
             raise ValueError(msg)
@@ -58,11 +58,7 @@ class NiftiConverter:
             img = img.slicer[:, :, :, 0]
 
         if img is not None:
-            if len(img.shape) > 3:
-                img_shape = img.shape[:3]
-            else:
-                img_shape = img.shape
-            return img.affine, img_shape
+            return img.affine, img.shape[:3]
         else:
             msg = "Could not load image for affine and shape definition."
             logger.error(msg)
@@ -103,11 +99,9 @@ class RoiObject:
         self.is_empty = True if self.size == 0 else False
 
 
-class NeuroTransformerMixin:
-    """
-    Abstract class for objects with possible output NiftiImage/np.ndarray.
+class NeuroTransformerMixin(TransformerMixin):
+    """Abstract class for objects with possible output NiftiImage/np.ndarray."""
 
-    """
     def __init__(self, output_img: bool = False):
         """
         Initialize the object.
@@ -155,33 +149,4 @@ class AtlasObject:
         self.atlas = None
         self.affine = affine
         self.shape = shape
-
         self.rois_available = []
-
-class RoiFilter(BaseEstimator, TransformerMixin):
-
-    def __init__(self, roi_allocation: dict, mask_indices: Union[np.ndarray, list], rois=[]):
-        self.roi_allocation = roi_allocation
-        self.mask_indices = mask_indices
-        self._rois = None
-        self.rois = rois
-
-    @property
-    def rois(self):
-        return self._rois
-
-    @rois.setter
-    def rois(self, value):
-        if isinstance(value, str):
-            self._rois = [value]
-        else:
-            self._rois = value
-        self.rois_indices = [self.roi_allocation[roi] for roi in self.rois]
-        self.filter_indices = np.array([True if x in self.rois_indices else False for x in self.mask_indices])
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X, y=None, **kwargs):
-        return_data = X[:, self.filter_indices]
-        return return_data

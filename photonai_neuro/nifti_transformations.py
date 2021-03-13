@@ -13,10 +13,8 @@ from photonai_neuro.objects import NeuroTransformerMixin
 
 
 class SmoothImages(BaseEstimator, NeuroTransformerMixin):
-    """
-    PipelineElement to perform nilearns smooth_img function.
+    """PipelineElement to perform nilearns smooth_img function."""
 
-    """
     def __init__(self, fwhm: Union[int, List, str] = 2, output_img: bool = False):
         """
         Initialize the object.
@@ -49,9 +47,9 @@ class SmoothImages(BaseEstimator, NeuroTransformerMixin):
 
     @fwhm.setter
     def fwhm(self, fwhm):
-        if isinstance(fwhm, int):  # allowing int to improve optimization
+        if isinstance(fwhm, (int, float)):  # allowing float to improve optimization
             self._fwhm = [fwhm, fwhm, fwhm]
-        elif isinstance(fwhm, list) and len(fwhm) == 3 and all(isinstance(x, int) for x in fwhm):
+        elif isinstance(fwhm, list) and len(fwhm) == 3 and all(isinstance(x, (int, float)) for x in fwhm):
             self._fwhm = fwhm
         elif fwhm == 'fast':
             self._fwhm = fwhm
@@ -87,8 +85,8 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
      This object creates the target_affine = np.diag(voxel_size) as 3x3 matrix.
 
     """
-    def __init__(self, voxel_size: Union[float, int, List] = 3, interpolation: str = 'nearest',
-                 output_img: bool = False):
+    def __init__(self, voxel_size: Union[float, int, List] = 3,
+                 interpolation: str = 'nearest', output_img: bool = False):
         """
         Initialize the object.
 
@@ -96,8 +94,10 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
             voxel_size:
                 Value to create target_affine matrix for resmapled_img function.
                 Length of list has to be in [3, 4].
+
             interpolation:
                 Set the resample method.
+
             output_img:
                 Indicates the output format. False -> np.ndarray,  True -> object (Nifti1Image).
 
@@ -108,7 +108,21 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
         self._interpolation = None
         self.interpolation = interpolation
 
-    def fit(self, X, y=None, **kwargs):
+    def fit(self, X: np.ndarray, y: Union[None, np.ndarray] = None):
+        """
+        Required function without any effect.
+
+        Parameters:
+            X:
+                The input samples as Niimg-like object of shape [n_samples, 1].
+
+            y:
+                The input targets of shape [n_samples, 1].
+
+        Returns:
+            IMPORTANT, must return self!
+
+        """
         return self
 
     @property
