@@ -5,8 +5,10 @@ import random
 import warnings
 
 from photonai.base import PipelineElement
+from photonai.photonlogger import logger
 
 from photonai_neuro import AtlasLibrary, BrainAtlas
+from photonai_neuro.objects import NiftiConverter
 from test.test_neuro import NeuroBaseTest
 
 
@@ -15,13 +17,20 @@ class BrainAtlasTests(NeuroBaseTest):
     def test_brain_atlas_mean(self):
 
         brain_atlas = BrainAtlas(self.atlas_name, "vec", rois=self.roi_list)
-        brain_atlas.transform(self.X)
-        self.assertTrue(len(self.X), len(brain_atlas.rois))
+        vec_output = brain_atlas.transform(self.X)
+        self.assertEqual(len(self.X), vec_output.shape[0])
+        self.assertEqual(vec_output.shape[1], brain_atlas.mask_indices.shape[0])
 
         brain_atlas_mean = BrainAtlas(self.atlas_name, "mean", rois='all')
-        brain_atlas_mean.transform(self.X)
-        # Todo: how to compare?
-        debug = True
+        mean_rois = brain_atlas_mean.transform(self.X)
+        self.assertEqual(mean_rois.shape[0], len(self.X))
+        # todo: should be 109 because of mean, but is the same as vec.
+        # todo: why? all ROIs == 116, 117 with background, but is not calculated in transform (_get_rois removed it.)
+        self.assertEqual(mean_rois.shape[1], len(dict(AtlasLibrary.LIBRARY)[(self.atlas_name,
+                                                                             str(brain_atlas_mean.affine),
+                                                                             str(brain_atlas_mean.shape),
+                                                                             str(brain_atlas_mean.mask_threshold))]
+                                                 .roi_list) - 1)
 
     def test_brain_atlas_load(self):
 
@@ -34,6 +43,7 @@ class BrainAtlasTests(NeuroBaseTest):
     def test_custom_atlas(self):
         custom_atlas = os.path.join(self.atlas_folder, 'AAL_SPM12/AAL.nii.gz')
 
+        # todo: consider renaming atlas_name to only atlas as we are giving a full path here which might be confusing?
         atlas = PipelineElement('BrainAtlas', atlas_name=custom_atlas, extract_mode='vec', batch_size=20)
         _ = atlas.transform(self.X)
 
@@ -41,26 +51,32 @@ class BrainAtlasTests(NeuroBaseTest):
             atlas = PipelineElement('BrainAtlas', atlas_name='XXXXX', extract_mode='vec', batch_size=20)
             atlas.transform(self.X)
 
-    def test_all_atlases(self):
+    def test_atlases(self):
         for atlas in AtlasLibrary().ATLAS_DICTIONARY.keys():
-            print("Running tests for atlas {}".format(atlas))
-            brain_atlas = PipelineElement('BrainAtlas', atlas_name=atlas, extract_mode='vec')
-            brain_atlas.transform(self.X)
+            self.run_atlas(atlas)
+            self.validity_check_roi_extraction(atlas)
+            AtlasLibrary.LIBRARY = {}
 
-    def test_validity_check_roi_extraction(self):
-        for atlas in AtlasLibrary().ATLAS_DICTIONARY.keys():
-            print("Checking atlas {}".format(atlas))
-            rois = AtlasLibrary().get_atlas(atlas).roi_list[1:3]
-            rois = [roi.label for roi in rois]
-            brain_atlas = BrainAtlas(atlas_name=atlas)
-            brain_atlas.rois = rois
-            X_t = brain_atlas.transform(self.X[0:2])
+    def run_atlas(self, atlas):
+        print("Running tests for atlas {}".format(atlas))
+        brain_atlas = PipelineElement('BrainAtlas', atlas_name=atlas, extract_mode='mean')
+        brain_atlas.transform(self.X[:2])
 
-            "-".join(rois)
-            name = os.path.join(self.test_folder, atlas + '_' + "-".join(rois))
-            brain_atlas._validity_check_roi_extraction(X_t[0], filename=name)
-            self.assertTrue(os.path.exists(name+".nii"))
-            os.remove(name+".nii")
+    def validity_check_roi_extraction(self, atlas):
+        affine, shape = NiftiConverter.get_format_info_from_first_image(self.X)
+        logger.debug("Checking atlas {}".format(atlas))
+        rois = AtlasLibrary().get_atlas(atlas, affine, shape).roi_list[1:3]
+        rois = [roi.label for roi in rois]
+        brain_atlas = BrainAtlas(atlas_name=atlas)
+        brain_atlas.rois = rois
+        X_t = brain_atlas.transform(self.X[:2])
+
+        "-".join(rois)
+        name = os.path.join(self.test_folder, atlas + '_' + "-".join(rois))
+        # todo: what good does that do?
+        brain_atlas._validity_check_roi_extraction(X_t[0], filename=name)
+        self.assertTrue(os.path.exists(name+".nii"))
+        os.remove(name+".nii")
 
     def test_roi_indices(self):
         for _ in range(10):
@@ -76,7 +92,7 @@ class BrainAtlasTests(NeuroBaseTest):
     def test_different_inputs(self):
         custom_atlas = os.path.join(self.atlas_folder, 'AAL_SPM12/AAL.nii.gz')
 
-        for x in [self.X[:2], self.X[0], image.load_img(self.X[0])]:
+        for x in [self.X[0], self.X[:2], image.load_img(self.X[0])]:
             atlas = PipelineElement('BrainAtlas', atlas_name=custom_atlas, extract_mode='vec', batch_size=20)
             self.assertIsInstance(atlas.transform(x)[0], np.ndarray)
 
@@ -96,3 +112,18 @@ class BrainAtlasTests(NeuroBaseTest):
         with warnings.catch_warnings(record=True) as w:
             AtlasLibrary().list_rois("plAtlas")
             assert len(w) == 1
+
+    def test_atlas_threshold(self):
+        roi_list = ["Hippocampus_L", "Hippocampus_R", "Amygdala_L", "Amygdala_R"]
+        atlas_wo_threshold = BrainAtlas(atlas_name=self.atlas_name,
+                                        extract_mode='vec',
+                                        rois=roi_list)
+        atlas_w_threshold = BrainAtlas(atlas_name=self.atlas_name,
+                                       extract_mode='vec',
+                                       rois=roi_list,
+                                       mask_threshold=3000)
+        a = atlas_wo_threshold.transform(self.X[:2])
+        b = atlas_w_threshold.transform(self.X[:2])
+
+        self.assertEqual(a.shape[0], b.shape[0])
+        self.assertGreater(a.shape[1], b.shape[1])

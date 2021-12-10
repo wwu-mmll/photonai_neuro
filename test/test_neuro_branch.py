@@ -20,25 +20,26 @@ class NeuroBranchTests(NeuroBaseTest):
             2. Testing Method on Multi Core
             3. Testing Method on Single Core Batched
             4. Testing Method on Multi Core Batched
-        """
 
+        """
         def create_instances_and_transform(neuro_class_str, param_dict, transformed_X):
 
-            for i in range(1, 4):
-                if i == 1 or i == 3:
+            for i in range(4):
+                if i in [0, 2]:
                     obj = NeuroBranch(name="single core application", nr_of_processes=1)
                 else:
                     obj = NeuroBranch(name="multi core application", nr_of_processes=3)
 
-                if i < 3:
+                if i in [0, 1]:
                     obj += PipelineElement(neuro_class_str, **param_dict)
-                if i >= 3:
+                else:
                     obj += PipelineElement(neuro_class_str, batch_size=5, **param_dict)
 
                 # transform data
                 obj.base_element.cache_folder = self.cache_folder_path
                 CacheManager.clear_cache_files(obj.base_element.cache_folder, True)
                 obj.base_element.current_config = {'test_suite': 1}
+
                 new_X, _, _ = obj.transform(self.X)
                 obj.base_element.clear_cache()
 
@@ -134,7 +135,7 @@ class NeuroBranchTests(NeuroBaseTest):
             nb.test_transform(self.X)
 
     def test_test_transform_multi(self):
-        nb = NeuroBranch('neuro_branch')
+        nb = NeuroBranch('neuro_branch', nr_of_processes=2)
         nb += PipelineElement('SmoothImages', fwhm=10)
         nb += PipelineElement('ResampleImages', voxel_size=5)
 
@@ -153,14 +154,14 @@ class NeuroBranchTests(NeuroBaseTest):
         nb = NeuroBranch('neuro_branch')
         nb += PipelineElement('SmoothImages', fwhm=10)
         nb += PipelineElement('ResampleImages', voxel_size=5)
-        nb += PipelineElement('BrainAtlas', rois=['Hippocampus_L', 'Hippocampus_R'],
-                               atlas_name="AAL", extract_mode='vec')
+        custom_mask = os.path.join(self.atlas_folder, 'Cerebellum/P_08_Cere.nii.gz')
+        nb += PipelineElement('BrainMask', mask_image=custom_mask, extract_mode='vec')
 
         nb.base_element.cache_folder = self.cache_folder_path
         CacheManager.clear_cache_files(nb.base_element.cache_folder, True)
         # set the config so that caching works
-        nb.set_params(**{'SmoothImages__fwhm': 10, 'ResampleImages__voxel_size': 5})
 
+        # last element is not returning in nii-format
         with self.assertRaises(ValueError):
             nb.test_transform(self.X)
 
@@ -187,3 +188,26 @@ class NeuroBranchTests(NeuroBaseTest):
         nb.transform(self.X[:1])
 
         self.assertIsInstance(self.a[0], Nifti1Image)
+
+    def test_invariance(self):
+        nb1 = NeuroBranch('neuro_branch', nr_of_processes=4, output_img=True)
+        nb1 += PipelineElement('ResampleImages', voxel_size=5, batch_size=1, interpolation='nearest')
+        nb1.base_element.cache_folder = self.cache_folder_path
+        CacheManager.clear_cache_files(nb1.base_element.cache_folder, True)
+        pai_result1, _, _ = nb1.transform(self.X)
+        del nb1
+
+        nb2 = NeuroBranch('neuro_branch', nr_of_processes=4, output_img=False)
+        nb2 += PipelineElement('ResampleImages', voxel_size=5, batch_size=2, interpolation='nearest')
+        nb2.base_element.cache_folder = self.cache_folder_path
+        CacheManager.clear_cache_files(nb2.base_element.cache_folder, True)
+        pai_result2, _, _ = nb2.transform(self.X)
+
+        nilearn_result = image.resample_img(self.X,
+                                            target_affine=np.diag([5, 5, 5]),
+                                            interpolation='nearest')
+        nilearn_result = [image.index_img(nilearn_result, i) for i in range(nilearn_result.shape[-1])]
+
+        for i in range(len(self.X)):
+            np.testing.assert_equal(nilearn_result[i].dataobj, pai_result2[i, :, :, :])
+            np.testing.assert_equal(nilearn_result[i].dataobj, pai_result1[i].dataobj)

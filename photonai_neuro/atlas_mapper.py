@@ -18,31 +18,27 @@ from photonai_neuro.neuro_branch import NeuroBranch
 
 
 class AtlasMapper:
-    """
-    Mapping between neuro processing and Hyperpipes for given regions of interest.
+    """Mapping between neuro processing and Hyperpipes for given regions of interest."""
 
-    Parameter
-    ---------
-    * `neuro_element` [Union[NeuroBranch, PipelineElement]]:
-        Neuro processing in front of hyperpipe.
+    def __init__(self, neuro_element: Union[NeuroBranch, PipelineElement], hyperpipe: Hyperpipe = None,
+                 folder: str = "./tmp/", create_surface_plots: bool = False):
+        """
+        Initialize the object.
 
-    * `hyperpipe` [photonai.base.Hyperpipe]
-        Hyperpipe to fit.
+        Parameters:
+            neuro_element:
+                Neuro processing in front of hyperpipe.
 
-    * `folder` [str]:
-        Output path for created hyperpipes and other results.
+            hyperpipe:
+                Hyperpipe to fit.
 
-    * `create_surface_plots` [bool]:
-        Enable/Disable plotting.
+            folder:
+                Output path for created hyperpipes and other results.
 
-    """
+            create_surface_plots:
+                Enable/Disable plotting.
 
-    def __init__(self,
-                 neuro_element: Union[NeuroBranch, PipelineElement],
-                 hyperpipe: Hyperpipe = None,
-                 folder: str = "./tmp/",
-                 create_surface_plots: bool = False):
-
+        """
         self.folder = folder
         if not os.path.exists(self.folder):
             os.makedirs(self.folder)
@@ -58,10 +54,7 @@ class AtlasMapper:
         self.create_surface_plots = create_surface_plots
 
     def _generate_mappings(self):
-        """
-        Generator creates dicts of hyperpipes by key roi_name.
-        :return: _
-        """
+        """Generator creates dicts of hyperpipes by key roi_name."""
         for roi_index, roi_name in enumerate(self.rois):
             self.roi_indices[roi_name] = roi_index
             copy_of_hyperpipe = self.hyperpipe.copy_me()
@@ -73,20 +66,22 @@ class AtlasMapper:
             self.hyperpipes_to_fit[roi_name] = copy_of_hyperpipe
         return
 
-    def fit(self, X, y=None, **kwargs):
+    def fit(self, X: np.ndarray, y: Union[np.ndarray, None] = None, **kwargs):
         """
         Transform data on NeuroElement and fit hyperpipes.
         :param X: input data
         :param y: targets
         :param kwargs:
-        :return:
-        """
 
+        Returns:
+            self
+
+        """
         # disable fitting with loading from file/folder
         if not self.hyperpipes_to_fit and self.hyperpipe:
             self._generate_mappings()
         else:
-            msg = "Cannot fit AtlasMapper with hyperpipe as NoneType."
+            msg = "Cannot fit AtlasMapper with Hyperpipe as NoneType."
             logger.error(msg)
             raise ValueError(msg)
 
@@ -109,8 +104,8 @@ class AtlasMapper:
             hyperpipe.verbosity = self.hyperpipe.verbosity
             hyperpipe.fit(X_extracted[self.roi_indices[roi_name]], y, **kwargs)
             hyperpipe_infos[roi_name] = {'hyperpipe_name': hyperpipe.name,
-                                         'model_filename': os.path.join(os.path.basename(hyperpipe.output_settings.results_folder),
-                                                                        'photon_best_model.photon'),
+                                         'model_filename': os.path.join(os.path.basename(
+                                             hyperpipe.output_settings.results_folder), 'photon_best_model.photon'),
                                          'roi_index': self.roi_indices[roi_name]}
             hyperpipe_results[roi_name] = ResultsHandler(hyperpipe.results).get_performance_outer_folds()
 
@@ -134,10 +129,11 @@ class AtlasMapper:
 
         if self.create_surface_plots:
             self.surface_plots(backmapped_img)
+        return self
 
-    def predict(self, X, **kwargs):
+    def predict(self, X: np.ndarray, **kwargs):
         if len(self.hyperpipes_to_fit) == 0:
-            msg = "No hyperpipes to predict. Did you remember to fit or load the Atlas Mapper?"
+            msg = "No hyperpipes to predict. Did you remember to fit or load the AtlasMapper?"
             logger.error(msg)
             raise Exception(msg)
 
@@ -158,8 +154,10 @@ class AtlasMapper:
         big_fsaverage = datasets.fetch_surf_fsaverage('fsaverage')
 
         cnt = 0
-        for hemi, infl, sulc, pial in [('left', big_fsaverage.infl_left, big_fsaverage.sulc_left, big_fsaverage.pial_left),
-                                        ('right', big_fsaverage.infl_right, big_fsaverage.sulc_right, big_fsaverage.pial_right)]:
+        for hemi, infl, sulc, pial in [('left', big_fsaverage.infl_left,
+                                        big_fsaverage.sulc_left, big_fsaverage.pial_left),
+                                       ('right', big_fsaverage.infl_right,
+                                        big_fsaverage.sulc_right, big_fsaverage.pial_right)]:
             print('Hemi {}'.format(hemi))
 
             big_texture = surface.vol_to_surf(perf_img, pial, interpolation='nearest')
@@ -179,11 +177,7 @@ class AtlasMapper:
 
     @staticmethod
     def _find_brain_atlas(neuro_element: Union[NeuroBranch, PipelineElement]):
-        """
-        Find BrainAtlas and returns its rois and atlas_object.
-        :param neuro_element: NeuroElement
-        :return: (roi_list, atlas_obj)
-        """
+        """Find BrainAtlas and returns its rois and atlas_object."""
         roi_list = list()
         atlas_obj = list()
         if isinstance(neuro_element, NeuroBranch):
@@ -209,14 +203,14 @@ class AtlasMapper:
         for roi_i in range(len(X[0])):
             for sub_i in range(len(X)):
                 roi_data[roi_i].append(X[sub_i][roi_i])
-
         return roi_data
 
     @staticmethod
     def load_from_file(file: str):
         if not os.path.exists(file):
-            raise FileNotFoundError("Couldn't find atlas mapper meta file")
-
+            msg = "Could not find the atlas-mapper meta file."
+            logger.error(msg)
+            raise FileNotFoundError(msg)
         return AtlasMapper._load(file)
 
     @staticmethod
@@ -230,7 +224,8 @@ class AtlasMapper:
             meta_file = glob(os.path.join(folder, '*_atlas_mapper_meta.json'))
 
         if len(meta_file) == 0:
-            raise FileNotFoundError("Couldn't find atlas_mapper_meta.json file in {}. Did you specify the correct analysis name?".format(folder))
+            raise FileNotFoundError("Couldn't find atlas_mapper_meta.json file in {}. "
+                                    "Did you specify the correct analysis name?".format(folder))
         elif len(meta_file) > 1:
             raise ValueError("Found multiple atlas_mapper_meta.json files in {}".format(folder))
 
@@ -250,8 +245,7 @@ class AtlasMapper:
             model_path = os.path.join(os.path.join(folder, infos['hyperpipe_name'] + "_results"),
                                       os.path.basename(infos['model_filename']))
             roi_models[roi_name] = Hyperpipe.load_optimum_pipe(model_path)
-            hyperpipes_to_fit = roi_models
         atlas_mapper = AtlasMapper(neuro_element=neuro_element, folder=folder)
-        atlas_mapper.hyperpipes_to_fit = hyperpipes_to_fit
+        atlas_mapper.hyperpipes_to_fit = roi_models
         atlas_mapper.hyperpipe_infos = hyperpipe_infos
         return atlas_mapper

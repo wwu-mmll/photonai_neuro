@@ -13,27 +13,26 @@ from photonai_neuro.objects import NeuroTransformerMixin
 
 
 class SmoothImages(BaseEstimator, NeuroTransformerMixin):
-    """
-    PipelineElemente to perform nilearns smooth_img function.
-
-    Parameter
-    ---------
-    * `fwhm`: Union[int, list, str] - [default: 2]
-        Smoothing strength, as a Full-Width at Half Maximum, in millimeters.
-        If a scalar is given, width is identical on all three directions.
-        A numpy.ndarray must have 3 elements, giving the FWHM along each axis.
-        If fwhm == ‘fast’, a fast smoothing will be performed with a filter [0.2, 1, 0.2]
-        in each direction and a normalisation to preserve the scale.
-        If fwhm is None, no filtering is performed (useful when just removal of non-finite values is needed).
-        * cited from nilearn: https://nilearn.github.io/modules/generated/nilearn.image.smooth_img.html
-
-    * `output_img`: bool - [default: False]
-        Indicates the output format. False -> array,  True -> object (Nifti1Image).
-
-    """
+    """PipelineElement to perform nilearns smooth_img function."""
 
     def __init__(self, fwhm: Union[int, List, str] = 2, output_img: bool = False):
+        """
+        Initialize the object.
 
+        Parameters:
+            fwhm:
+                Smoothing strength, as a Full-Width at Half Maximum, in millimeters.
+                If a scalar is given, width is identical on all three directions.
+                A numpy.ndarray must have 3 elements, giving the FWHM along each axis.
+                If fwhm == ‘fast’, a fast smoothing will be performed with a filter [0.2, 1, 0.2]
+                in each direction and a normalisation to preserve the scale.
+                If fwhm is None, no filtering is performed (useful when just removal of non-finite values is needed).
+                * cited from nilearn: https://nilearn.github.io/modules/generated/nilearn.image.smooth_img.html
+
+            output_img:
+                Indicates the output format. False -> array,  True -> object (Nifti1Image).
+
+        """
         super(SmoothImages, self).__init__(output_img=output_img)
 
         self._fwhm = None
@@ -48,15 +47,15 @@ class SmoothImages(BaseEstimator, NeuroTransformerMixin):
 
     @fwhm.setter
     def fwhm(self, fwhm):
-        if isinstance(fwhm, int):  # allowing int to improve optimization
+        if isinstance(fwhm, (int, float)):  # allowing float to improve optimization
             self._fwhm = [fwhm, fwhm, fwhm]
-        elif isinstance(fwhm, list) and len(fwhm) == 3 and all(isinstance(x, int) for x in fwhm):
+        elif isinstance(fwhm, list) and len(fwhm) == 3 and all(isinstance(x, (int, float)) for x in fwhm):
             self._fwhm = fwhm
         elif fwhm == 'fast':
             self._fwhm = fwhm
         elif fwhm is None:
             self._fwhm = None
-            warn_msg = "the fwhm in SmoothImages is None, no filtering is performed (useful when just " \
+            warn_msg = "The fwhm in SmoothImages is None, no filtering is performed (useful when just " \
                        "removal of non-finite values is needed). "
             logger.warning(warn_msg)
             warnings.warn(warn_msg)
@@ -69,8 +68,6 @@ class SmoothImages(BaseEstimator, NeuroTransformerMixin):
 
         if isinstance(X, list) and len(X) == 1:
             smoothed_img = smooth_img(X[0], fwhm=self.fwhm)
-        elif isinstance(X, str):
-            smoothed_img = smooth_img(X, fwhm=self.fwhm)
         else:
             smoothed_img = smooth_img(X, fwhm=self.fwhm)
 
@@ -87,30 +84,59 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
      Resampling voxel size based on nilearns resample_img function.
      This object creates the target_affine = np.diag(voxel_size) as 3x3 matrix.
 
-    Parameter
-    ---------
-    * `voxel_size`: Union[int, List] - [default: 3]
-        Value to create target_affine matrix for resmapled_img function.
-    * `interpolation`: str - [default: 'nearest']
-        Set the resample method.
-    * `output_img`: bool - [default: False]
-        Indicates the output format. False -> array,  True -> object (Nifti1Image).
-
     """
-    def __init__(self, voxel_size: Union[int, List] = 3, interpolation: str = 'nearest', output_img: bool = False):
+    def __init__(self, voxel_size: Union[float, int, List] = 3,
+                 interpolation: str = 'nearest', output_img: bool = False):
+        """
+        Initialize the object.
+
+        Parameters:
+            voxel_size:
+                Value to create target_affine matrix for resmapled_img function.
+                Length of list has to be in [3, 4].
+
+            interpolation:
+                Set the resample method.
+
+            output_img:
+                Indicates the output format. False -> np.ndarray,  True -> object (Nifti1Image).
+
+        """
         super(ResampleImages, self).__init__(output_img=output_img)
         self._voxel_size = None
         self.voxel_size = voxel_size
+        self._interpolation = None
+        self.interpolation = interpolation
 
-        if interpolation in ['continuous', 'linear', 'nearest']:
-            self.interpolation = interpolation
+    def fit(self, X: np.ndarray, y: Union[None, np.ndarray] = None):
+        """
+        Required function without any effect.
+
+        Parameters:
+            X:
+                The input samples as Niimg-like object of shape [n_samples, 1].
+
+            y:
+                The input targets of shape [n_samples, 1].
+
+        Returns:
+            IMPORTANT, must return self!
+
+        """
+        return self
+
+    @property
+    def interpolation(self):
+        return self._interpolation
+
+    @interpolation.setter
+    def interpolation(self, value):
+        if value in ['continuous', 'linear', 'nearest']:
+            self._interpolation = value
         else:
-            msg = "Got unexpected interpolation. Please use one of ['continuous', 'linear' 'nearest']"
+            msg = "Got unexpected interpolation. Please use one of ['continuous', 'linear' 'nearest']."
             logger.error(msg)
             raise NameError(msg)
-
-    def fit(self, X, y=None, **kwargs):
-        return self
 
     @property
     def voxel_size(self):
@@ -118,12 +144,13 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
 
     @voxel_size.setter
     def voxel_size(self, voxel_size):
-        if isinstance(voxel_size, int):
+        if isinstance(voxel_size, (int, float)):
             self._voxel_size = [voxel_size, voxel_size, voxel_size]
-        elif isinstance(voxel_size, list) and len(voxel_size) == 3 and all(isinstance(x, int) for x in voxel_size):
+        elif isinstance(voxel_size, list) and len(voxel_size) in [3, 4] \
+                and all(isinstance(x, (int, np.int, np.int64, np.int32, float)) for x in voxel_size):
             self._voxel_size = voxel_size
         else:
-            msg = "ResampleImages expected voxel_size as int or a list of three ints like [3, 3, 3]."
+            msg = "ResampleImages expected voxel_size as int or a list of three/four ints like [3, 3, 3]."
             logger.error(msg)
             raise ValueError(msg)
 
@@ -132,8 +159,6 @@ class ResampleImages(BaseEstimator, NeuroTransformerMixin):
 
         if isinstance(X, list) and len(X) == 1:
             resampled_img = resample_img(X[0], target_affine=target_affine, interpolation=self.interpolation)
-        elif isinstance(X, str):
-            resampled_img = resample_img(X, target_affine=target_affine, interpolation=self.interpolation)
         else:
             resampled_img = resample_img(X, target_affine=target_affine, interpolation=self.interpolation)
 
@@ -216,7 +241,10 @@ class PatchImages(BaseEstimator, NeuroTransformerMixin):
         output_matrix = patches_drawn[0:patch_list_length:patch_size, 0:patch_list_width:patch_size, :, :]
 
         # TODO: Reshape First 3 Matrix Dimensions into 1, which will give 900 images
-        output_matrix = output_matrix.reshape((-1, output_matrix.shape[3], output_matrix.shape[4], output_matrix.shape[5]))
+        output_matrix = output_matrix.reshape((-1,
+                                               output_matrix.shape[3],
+                                               output_matrix.shape[4],
+                                               output_matrix.shape[5]))
         output_matrix = np.squeeze(output_matrix)
 
         return output_matrix

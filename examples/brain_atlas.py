@@ -3,7 +3,7 @@ import numpy as np
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import ShuffleSplit
 
-from photonai.base import Hyperpipe, PipelineElement, OutputSettings, Stack
+from photonai.base import Hyperpipe, PipelineElement, Stack
 from photonai_neuro import NeuroBranch
 from photonai_neuro.brain_atlas import AtlasLibrary
 
@@ -11,25 +11,22 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 
 # GET DATA FROM OASIS
-n_subjects = 50
+n_subjects = 400
 dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
 age = dataset_files.ext_vars['age'].astype(float)
 y = np.array(age)
 X = np.array(dataset_files.gray_matter_maps)
 
-
-
-# DESIGN YOUR PIPELINE
 pipe = Hyperpipe('Limbic_System',
                  optimizer='grid_search',
                  metrics=['mean_absolute_error'],
                  best_config_metric='mean_absolute_error',
-                 outer_cv=ShuffleSplit(n_splits=1, test_size=0.2),
-                 inner_cv=ShuffleSplit(n_splits=1, test_size=0.2),
+                 outer_cv=ShuffleSplit(n_splits=2, test_size=0.2),
+                 inner_cv=ShuffleSplit(n_splits=2, test_size=0.2),
                  verbosity=2,
                  cache_folder="./cache",
-                 eval_final_performance=False,
-                 output_settings=OutputSettings(project_folder='./tmp/'))
+                 use_test_set=False,
+                 project_folder='./tmp/')
 
 """
 AVAILABLE ATLASES
@@ -88,13 +85,13 @@ neuro_stack += ho_sub
 
 # ADD NEURO ELEMENTS TO HYPERPIPE
 # V1.1 --------------------------------------------
-#pipe += neuro_branch_v1
+# pipe += neuro_branch_v1
 # V1.2 --------------------------------------------
 pipe += neuro_branch_v2
 # V2 --------------------------------------------
 # pipe += neuro_stack
 # ------------------------------------------------
-pipe += PipelineElement('PCA', n_components=20)
-pipe += PipelineElement('RandomForestRegressor')
+pipe += PipelineElement('SelectPercentile', percentile=5)
+pipe += PipelineElement('LinearSVR')
 
 pipe.fit(X, y)

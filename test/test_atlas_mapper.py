@@ -1,27 +1,26 @@
-import warnings
 import os
 import numpy as np
 from nilearn.datasets import fetch_oasis_vbm
 from sklearn.model_selection import KFold
 
-from photonai.base import Hyperpipe, PipelineElement, OutputSettings, Preprocessing
+from photonai.base import Hyperpipe, PipelineElement, Preprocessing
 from photonai_neuro import AtlasMapper, NeuroBranch
 from test.test_neuro import NeuroBaseTest
+
 
 class AtlasMapperTests(NeuroBaseTest):
 
     def create_hyperpipe(self):
-        results_folder = './tmp/'
-        cache_folder = './tmp/cache'
-        settings = OutputSettings(project_folder=results_folder)
+        results_folder = self.tmp_folder_path
+        cache_folder = self.cache_folder_path
 
         my_pipe = Hyperpipe('atlas_mapper_example',
                             optimizer='grid_search',
                             metrics=['accuracy'],
                             best_config_metric='accuracy',
                             inner_cv=KFold(n_splits=2),
-                            verbosity=2,
-                            output_settings=settings,
+                            verbosity=0,
+                            project_folder=results_folder,
                             cache_folder=cache_folder)
 
         preprocessing = Preprocessing()
@@ -30,10 +29,11 @@ class AtlasMapperTests(NeuroBaseTest):
         my_pipe += PipelineElement('LinearSVC')
         return my_pipe
 
-    def create_data(self):
+    @staticmethod
+    def create_data():
         n_subjects = 20
         dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
-        age = dataset_files.ext_vars['age'].astype(float)
+        _ = dataset_files.ext_vars['age'].astype(float)
         gender = dataset_files.ext_vars['mf'].astype(str)
         y = np.array(gender)
         X = np.array(dataset_files.gray_matter_maps)
@@ -42,8 +42,6 @@ class AtlasMapperTests(NeuroBaseTest):
     def test_fit_reload_all(self):
         results_folder = './tmp/'
         X, y = self.create_data()
-        #brain_atlas = PipelineElement('BrainAtlas', atlas_name="Yeo_7", extract_mode='vec',
-        #                              rois='all', batch_size=200)
         brain_atlas = PipelineElement('BrainAtlas', atlas_name="AAL",
                                       rois=['Hippocampus_L', 'Hippocampus_R', "Frontal_Sup_Orb_L"], batch_size=200)
 
@@ -81,7 +79,7 @@ class AtlasMapperTests(NeuroBaseTest):
         self.assertTrue(os.path.exists(results_folder+"importance_scores_surface.png"))
 
     def test_fit_concat(self):
-        results_folder = './tmp/'
+        results_folder = self.tmp_folder_path
         X, y = self.create_data()
         brain_atlas = PipelineElement('BrainAtlas', atlas_name="Yeo_7", extract_mode='vec',
                                       rois='all', batch_size=200)
