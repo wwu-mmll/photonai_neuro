@@ -7,3 +7,4 @@ pandas
 photonai
 scikit-learn
 scikit-image
+pbr
