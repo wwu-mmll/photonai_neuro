@@ -17,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python 3.7.6
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.7.6
       - name: Install dependencies
@@ -27,12 +27,11 @@ jobs:
           pip install pytest pytest-cov coveralls -r photonai_neuro.egg-info/requires.txt
       - name: Test with pytest
         run: |
-          PYTHONPATH=./ pytest ./test --cov=./photonai_neuro --tb=long
+          PYTHONPATH=./ pytest ./test --cov-report lcov:./coverage/lcov.info --cov=./photonai_neuro --tb=long
       - name: Coveralls
-        run: coveralls
-        env:
-          COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: coverallsapp/github-action@master
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
   deploy:
     name: Build and publish to TestPyPI
@@ -42,7 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python 3.7.6
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v4
         with:
           python-version: 3.7.6
       - name: Replace version number with commit hash
