@@ -4,6 +4,7 @@ from datetime import datetime
 from photonai.photonlogger import logger
 
 from .util import register_photonai_neuro
+from .version import __version__
 
 
 # REGISTRATION
