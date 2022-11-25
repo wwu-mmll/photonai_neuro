@@ -19,4 +19,4 @@ pip install photonai-neuro
 
 - Easy access to common brain masks and atlases.
 - Simple syntax for building neuro-pipelines.
-- All PHTONAI advantages like hyperparemter optimization, model sharing, results visualization, and much more.
+- All PHOTONAI advantages like hyperparemter optimization, model sharing, results visualization, and much more.
