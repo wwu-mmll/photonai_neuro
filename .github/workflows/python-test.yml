@@ -39,14 +39,12 @@ jobs:
     if: github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v3
+        with:
+            fetch-depth: 0
       - name: Set up Python 3.9
         uses: actions/setup-python@v4
         with:
           python-version: 3.9
-      - name: Replace version number with commit hash
-        run: |
-          dt=$(date '+%Y.%m.%d.%H.%M.%S')
-          sed -i "s/^__version__.*/__version__ = '$dt'/g" setup.py
       - name: Install pypa/build
         run: pip install build pbr wheel
       - name: Build a binary wheel and a source tarball
