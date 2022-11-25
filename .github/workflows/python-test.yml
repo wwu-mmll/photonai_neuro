@@ -50,7 +50,7 @@ jobs:
       - name: Install pypa/build
         run: pip install build
       - name: Build a binary wheel and a source tarball
-        run: python -m build --sdist --wheel --outdir dist/ .
+        run: python -m build --sdist -n --wheel --outdir dist/ .
       - name: Publish distribution to Test PyPI
         uses: pypa/gh-action-pypi-publish@master
         with:
