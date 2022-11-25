@@ -49,6 +49,10 @@ class NeuroBranch(ParallelBranch, NeuroTransformerMixin):
             self
 
         """
+        if pipe_element.name not in NeuroBranch.NEURO_ELEMENTS:
+            # reload
+            PhotonRegistry.ELEMENT_DICTIONARY = PhotonRegistry().get_package_info()
+            NeuroBranch.NEURO_ELEMENTS = PhotonRegistry().get_package_info(['photonai_neuro'])
         if pipe_element.name in NeuroBranch.NEURO_ELEMENTS:
             # as the neuro branch is parallelized and processes several images subsequently on
             # different cores, we need to stop the children to process on several cores as well

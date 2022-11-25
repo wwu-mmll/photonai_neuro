@@ -32,11 +32,13 @@ class AtlasMapperTests(NeuroBaseTest):
     @staticmethod
     def create_data():
         n_subjects = 20
-        dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
-        _ = dataset_files.ext_vars['age'].astype(float)
-        gender = dataset_files.ext_vars['mf'].astype(str)
-        y = np.array(gender)
-        X = np.array(dataset_files.gray_matter_maps)
+        y = [0]
+        while len(np.unique(y)) == 1:
+            dataset_files = fetch_oasis_vbm(n_subjects=n_subjects)
+            _ = dataset_files.ext_vars['age'].astype(float)
+            gender = dataset_files.ext_vars['mf'].astype(str)
+            y = np.array(gender)
+            X = np.array(dataset_files.gray_matter_maps)
         return X, y
 
     def test_fit_reload_all(self):
