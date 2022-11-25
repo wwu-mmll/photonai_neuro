@@ -10,9 +10,9 @@ Overall, this module combines the functionality of the famous [Nilearn](https://
 with the pipeline structure of [PHOTONAI](https://photon-ai.com).
 
 ## Project setup
-Install the latest version directly from Github:
+Install the latest version directly via pip:
 ```
-pip install git+https://github.com/wwu-mmll/photonai_neuro
+pip install photonai-neuro
 ```
 
 ## Features
