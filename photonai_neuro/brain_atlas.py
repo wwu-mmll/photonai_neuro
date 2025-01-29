@@ -108,7 +108,7 @@ class BrainAtlas(BaseEstimator, TransformerMixin):
         t1 = time.time()
 
         # convert to series and C ordering since this will speed up the masking process
-        series = _utils.as_ndarray(_utils.niimg._safe_get_data(X), dtype='float32', order="C", copy=True)
+        series = _utils.as_ndarray(_utils.niimg.safe_get_data(X), dtype='float32', order="C", copy=True)
         mask_indices = np.array([]) if self.collection_mode == "concat" else list()
 
         # calculate roi_data for every ROI object by looping
